@@ -1,15 +1,14 @@
 extern crate glfw;
 extern crate gl;
-use gl::types::*; 
 use std::ffi::{CString, CStr};
-
-
 use glfw::{Action, Context, Key};
 
 
 fn bind_gl_funcs(window: &mut glfw::Window) {
     gl::Clear::load_with(|s| window.get_proc_address(s) as *const _);
     gl::ClearColor::load_with(|s| window.get_proc_address(s) as *const _);
+    gl::Viewport::load_with(|s| window.get_proc_address(s) as *const _);
+
     gl::GenBuffers::load_with(|s| window.get_proc_address(s) as *const _);
     gl::BindBuffer::load_with(|s| window.get_proc_address(s) as *const _);
     gl::BufferData::load_with(|s| window.get_proc_address(s) as *const _);
@@ -137,13 +136,13 @@ impl Drop for QuadDrawer {
 
 fn main() {
     let mut glfw = glfw::init(glfw::FAIL_ON_ERRORS).unwrap();
-    println!("{:?}", glfw::get_version());
-    println!("GLFW version: {:?}", glfw::get_version_string());
+    println!("gl version: {:?}", glfw::get_version());
 
     let (mut window, events) = glfw.create_window(640, 480, "raytracer-rs", glfw::WindowMode::Windowed)
         .expect("Failed to create GLFW window.");
 
     window.set_key_polling(true);
+    window.set_framebuffer_size_polling(true);
     window.make_current();
 
     bind_gl_funcs(&mut window);
@@ -175,6 +174,9 @@ fn handle_window_event(window: &mut glfw::Window, event: glfw::WindowEvent) {
     match event {
         glfw::WindowEvent::Key(Key::Escape, _, Action::Press, _) => {
             window.set_should_close(true)
+        },
+        glfw::WindowEvent::FramebufferSize(w,h) => {
+            unsafe { gl::Viewport(0,0,w,h); }
         }
         _ => {}
     }
