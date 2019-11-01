@@ -109,8 +109,7 @@ dependencies = [
 name = "raytracer-rs"
 version = "0.1.0"
 dependencies = [
- "gl 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "glfw 0.33.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "softcanvas 0.1.0",
 ]
 
 [[package]]
@@ -125,6 +124,14 @@ dependencies = [
 name = "semver-parser"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "softcanvas"
+version = "0.1.0"
+dependencies = [
+ "gl 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "glfw 0.33.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "xml-rs"
