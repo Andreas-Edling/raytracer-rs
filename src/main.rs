@@ -298,20 +298,28 @@ impl SoftCanvas {
     }
 }
 
+fn raytrace_or_whatever() -> Vec<u32> {
+    let frame = vec![0x00_FF_00_FFu32; 640 * 480];
+    frame
+}
+
 fn main() {
-    let mut soft_canvas = SoftCanvas::new(640, 480).unwrap();
+    let mut soft_canvas = SoftCanvas::new(640, 480).expect("cant create canvas");
+    let (frame_sender, frame_receiver) = std::sync::mpsc::channel();
 
-    let data = vec![0xFF_00_00_FFu32; 640 * 480];
-    Canvas::set_data(&data, 640, 480);
-
-    // std::thread::spawn(move || {
-    //     loop {
-    //         Canvas::set_data(&data, 640, 480);
-    //         std::thread::sleep(std::time::Duration::from_millis(50));
-    //     }
-    // });
+    std::thread::spawn(move || {
+        loop {
+            let frame = raytrace_or_whatever();
+            frame_sender.send(frame).expect("cant send data");
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
+    });
 
     while soft_canvas.is_running() {
+        if let Ok(frame) = frame_receiver.try_recv() {
+            soft_canvas.set_data(&frame);
+        }
+
         soft_canvas.clear();
         soft_canvas.draw();
 
