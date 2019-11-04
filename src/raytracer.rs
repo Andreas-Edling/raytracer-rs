@@ -1,16 +1,7 @@
-struct Vertex {
-    x: f32,
-    y: f32,
-    z: f32,
-}
-impl Vertex {
-    fn new(x: f32, y: f32, z: f32) -> Self {
-        Vertex { x, y, z }
-    }
-}
+use crate::vecmath::{Vec3, dot, cross};
 
-type Pos = Vertex;
-type Vec3 = Vertex;
+type Pos = Vec3;
+type Vertex = Vec3;
 
 struct Color {
     r: f32,
@@ -65,7 +56,34 @@ impl Ray {
 }
 
 fn intersect(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
-    Some(1.0)
+    // Möller-Trumbore algo
+
+    let v0v1= v1 - v0; 
+    let v0v2 = v2 - v0; 
+    let pvec = cross(&ray.dir, &v0v2); 
+    let det = dot(&v0v1, &pvec); 
+
+    // ray and triangle are parallel if det is close to 0
+    if det.abs() < std::f32::EPSILON {  // switch to "if det < std::f32::EPSILON { return None };" for backface culling
+        return None;
+     } 
+    let inv_det = 1.0 / det; 
+ 
+    let tvec = &ray.pos - v0; 
+    let u = dot(&tvec, &pvec) * inv_det; 
+    if u < 0.0 || u > 1.0 { 
+        return None; 
+    }
+ 
+    let qvec = cross(&tvec, &v0v1); 
+    let v = dot(&ray.dir, &qvec) * inv_det; 
+    if v < 0.0 || u + v > 1.0 {
+        return None;
+    } 
+
+    // u,v are coords in tri, return if needed    
+    let t = dot(&v0v2, &qvec) * inv_det; 
+    Some(t)
 }
 
 pub struct RayTracer {
@@ -82,7 +100,7 @@ mod camera {
         for y in 0..height {
             for x in 0..width {
                 rays.push(Ray::new(
-                    Pos::new(x as f32, y as f32, 0.0),
+                    Pos::new(x as f32 / width as f32, y as f32 / height as f32, 0.0),
                     Vec3::new(0.0, 0.0, 1.0),
                 ));
             }
@@ -100,6 +118,7 @@ impl RayTracer {
         }
     }
 
+    #[rustfmt::skip]
     pub fn trace_frame(&self) -> Vec<u32> {
         let rays = camera::naive_ortho(self.width, self.height);
         let mut frame = Vec::with_capacity(self.width*self.height);
@@ -111,7 +130,7 @@ impl RayTracer {
                     (None, None) => (),
                     (Some(_), None) => (),
                     (None, Some(x)) => if x > 0.0 {closest_hit = Some(x)},
-                    (Some(c), Some(x)) => if x > 0.0 && x<c {closest_hit = Some(x)},
+                    (Some(c), Some(x)) => if x > 0.0 && x < c {closest_hit = Some(x)},
                 }
             }
 

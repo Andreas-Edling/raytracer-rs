@@ -1,4 +1,5 @@
 mod raytracer;
+mod vecmath;
 
 fn main() {
     const WIDTH: usize = 640;
