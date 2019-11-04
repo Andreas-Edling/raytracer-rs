@@ -1,21 +1,17 @@
-// extern crate gl;
-// extern crate glfw;
-// use gl::types::*;
-// use glfw::{Action, Context, Key};
-// use std::ffi::{CStr, CString};
-
-fn raytrace_or_whatever() -> Vec<u32> {
-    let frame = vec![0x00_FF_00_FFu32; 640 * 480];
-    frame
-}
+mod raytracer;
 
 fn main() {
+    const WIDTH: usize = 640;
+    const HEIGHT: usize = 480;
     let mut soft_canvas = softcanvas::SoftCanvas::new(640, 480).expect("cant create canvas");
     let (frame_sender, frame_receiver) = std::sync::mpsc::channel();
 
     std::thread::spawn(move || {
+        let scene = raytracer::Scene::test_scene();
+        let raytracer = raytracer::RayTracer::new(WIDTH, HEIGHT, scene);
+
         loop {
-            let frame = raytrace_or_whatever();
+            let frame = raytracer.trace_frame();
             frame_sender.send(frame).expect("cant send data");
             std::thread::sleep(std::time::Duration::from_millis(50));
         }
@@ -30,7 +26,12 @@ fn main() {
         soft_canvas.draw();
 
         soft_canvas.handle_events(|event, soft_canvas_context| match event {
-            softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::Escape, _, softcanvas::glfw::Action::Press, _) => {
+            softcanvas::glfw::WindowEvent::Key(
+                softcanvas::glfw::Key::Escape,
+                _,
+                softcanvas::glfw::Action::Press,
+                _,
+            ) => {
                 soft_canvas_context.stop_running();
             }
             _ => (),
