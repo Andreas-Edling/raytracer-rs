@@ -8,12 +8,21 @@ fn main() {
     let (frame_sender, frame_receiver) = std::sync::mpsc::channel();
     let (event_sender, event_receiver) = std::sync::mpsc::channel();
  
+    #[rustfmt::skip]
     std::thread::spawn(move || {
         let scene = raytracer::Scene::test_box();
+        let mut cube_rot_x = 0.0;
+        let mut cube_rot_y = 0.0;
+
         let mut raytracer = raytracer::RayTracer::new(WIDTH, HEIGHT, scene);
         let mut last_time = std::time::Instant::now();
 
         loop {
+            let cube_matrix = vecmath::Matrix::rot_x(cube_rot_x);
+            let cube_matrix = cube_matrix * vecmath::Matrix::rot_y(cube_rot_y);
+
+            raytracer.scene.apply_transform(&cube_matrix);
+
             let frame = raytracer.trace_frame();
             frame_sender.send(frame).expect("cant send data");
 
@@ -31,6 +40,12 @@ fn main() {
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::Down, _, softcanvas::glfw::Action::Press, _) => {
                         raytracer.camera.move_rel(0.0, -0.1, 0.0);
                     },
+                    softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::Comma, _, softcanvas::glfw::Action::Press, _) => {
+                        raytracer.camera.move_rel(0.0, 0.0, 0.1);
+                    },
+                    softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::Period, _, softcanvas::glfw::Action::Press, _) => {
+                        raytracer.camera.move_rel(0.0, 0.0, -0.1);
+                    },
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::A, _, softcanvas::glfw::Action::Press, _) => {
                         raytracer.camera.add_y_angle(0.01);
                     },
@@ -43,6 +58,22 @@ fn main() {
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::S, _, softcanvas::glfw::Action::Press, _) => {
                         raytracer.camera.add_x_angle(-0.01);
                     },
+                    softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::I, _, softcanvas::glfw::Action::Press, _) => {
+                        cube_rot_x += 10.0*3.141592/180.0;
+                    },
+                    softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::K, _, softcanvas::glfw::Action::Press, _) => {
+                        cube_rot_x -= 10.0*3.141592/180.0;
+                    },
+                    softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::L, _, softcanvas::glfw::Action::Press, _) => {
+                        cube_rot_y += 10.0*3.141592/180.0;
+                    },
+                    softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::J, _, softcanvas::glfw::Action::Press, _) => {
+                        cube_rot_y -= 10.0*3.141592/180.0;
+                    },
+                    softcanvas::glfw::WindowEvent::CursorPos(x,y) => {
+                        raytracer.camera.set_x_angle(y as f32 / 100.0);
+                        raytracer.camera.set_y_angle(x as f32 / 100.0);
+                    }
                     _ => (),
                 }
             }
@@ -67,7 +98,7 @@ fn main() {
             softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::Escape, _, softcanvas::glfw::Action::Press, _) => {
                 soft_canvas_context.stop_running();
             }
-            _ => { event_sender.send(event); },
+            _ => { event_sender.send(event).expect("cant send event"); },
         });
     }
 }

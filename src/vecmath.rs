@@ -8,6 +8,11 @@ impl Vec3 {
     pub fn new(x: f32, y: f32, z: f32) -> Self {
         Vec3 { x, y, z }
     }
+
+    pub fn normalized(&self) -> Vec3 {
+        let len = (self.x*self.x + self.y*self.y + self.z*self.z).sqrt();
+        Vec3::new(self.x / len, self.y / len, self.z / len)
+    }
 }
 
 impl From<Vec4> for Vec3 {
@@ -16,29 +21,22 @@ impl From<Vec4> for Vec3 {
     }
 }
 
-impl std::ops::Sub for &Vec3 {
-    type Output = Vec3;
+#[rustfmt::skip] impl std::ops::Add<&Vec3> for &Vec3 { type Output = Vec3; fn add(self, other: &Vec3) -> Vec3 { Vec3::new(self.x + other.x, self.y + other.y, self.z + other.z) }}
+#[rustfmt::skip] impl std::ops::Add<&Vec3> for  Vec3 { type Output = Vec3; fn add(self, other: &Vec3) -> Vec3 { Vec3::new(self.x + other.x, self.y + other.y, self.z + other.z) }}
+#[rustfmt::skip] impl std::ops::Add< Vec3> for &Vec3 { type Output = Vec3; fn add(self, other: Vec3) -> Vec3 { Vec3::new(self.x + other.x, self.y + other.y, self.z + other.z) }}
+#[rustfmt::skip] impl std::ops::Add< Vec3> for  Vec3 { type Output = Vec3; fn add(self, other: Vec3) -> Vec3 { Vec3::new(self.x + other.x, self.y + other.y, self.z + other.z) }}
 
-    fn sub(self, other: &Vec3) -> Vec3 {
-        Vec3 {
-            x: self.x - other.x,
-            y: self.y - other.y,
-            z: self.z - other.z,
-        }
-    }
-}
+#[rustfmt::skip] impl std::ops::Sub<&Vec3> for &Vec3 { type Output = Vec3; fn sub(self, other: &Vec3) -> Vec3 { Vec3::new(self.x - other.x, self.y - other.y, self.z - other.z) }}
+#[rustfmt::skip] impl std::ops::Sub<&Vec3> for  Vec3 { type Output = Vec3; fn sub(self, other: &Vec3) -> Vec3 { Vec3::new(self.x - other.x, self.y - other.y, self.z - other.z) }}
+#[rustfmt::skip] impl std::ops::Sub< Vec3> for &Vec3 { type Output = Vec3; fn sub(self, other: Vec3) -> Vec3 { Vec3::new(self.x - other.x, self.y - other.y, self.z - other.z) }}
+#[rustfmt::skip] impl std::ops::Sub< Vec3> for  Vec3 { type Output = Vec3; fn sub(self, other: Vec3) -> Vec3 { Vec3::new(self.x - other.x, self.y - other.y, self.z - other.z) }}
 
-impl std::ops::Sub for Vec3 {
-    type Output = Vec3;
+#[rustfmt::skip] impl std::ops::Mul<f32> for &Vec3 { type Output = Vec3; fn mul(self, other: f32) -> Vec3 { Vec3::new(self.x * other, self.y * other, self.z * other) }}
+#[rustfmt::skip] impl std::ops::Mul<f32> for  Vec3 { type Output = Vec3; fn mul(self, other: f32) -> Vec3 { Vec3::new(self.x * other, self.y * other, self.z * other) }}
+#[rustfmt::skip] impl std::ops::Mul< Vec3> for f32 { type Output = Vec3; fn mul(self, other: Vec3) -> Vec3 { Vec3::new(self * other.x, self * other.y, self * other.z) }}
+#[rustfmt::skip] impl std::ops::Mul<&Vec3> for f32 { type Output = Vec3; fn mul(self, other: &Vec3) -> Vec3 { Vec3::new(self * other.x, self * other.y, self * other.z) }}
 
-    fn sub(self, other: Vec3) -> Vec3 {
-        Vec3 {
-            x: self.x - other.x,
-            y: self.y - other.y,
-            z: self.z - other.z,
-        }
-    }
-}
+
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Vec4 {
@@ -250,9 +248,9 @@ impl std::ops::Mul<Matrix> for Matrix {
 }
 
 mod tests {
-    use super::*;
     #[test]
     fn test_mul_identities() {
+        use super::Matrix;
         let m0 = Matrix::ident();
         let m1 = Matrix::ident();
         let m2 = m0 * m1;
@@ -261,6 +259,7 @@ mod tests {
 
     #[test]
     fn test_mul_vec_mat() {
+        use super::{Matrix, Vec4};
         let v = Vec4::new(1.0, 2.0, 3.0, 4.0);
         let m = Matrix::ident();
         let res = m * v;
