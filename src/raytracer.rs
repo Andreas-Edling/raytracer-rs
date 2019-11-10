@@ -232,18 +232,8 @@ impl RayTracer {
     #[rustfmt::skip]
     pub fn trace_frame(&mut self) -> Vec<u32> {
         let rays = self.camera.get_rays();
-        println!("middle ray- p {} {} {}  d {} {} {}",
-            rays[320 +240*640].pos.x,
-            rays[320 +240*640].pos.y,
-            rays[320 +240*640].pos.z,
-            rays[320 +240*640].dir.x,
-            rays[320 +240*640].dir.y,
-            rays[320 +240*640].dir.z,
-        );
         let mut frame = Vec::with_capacity(self.width*self.height);
 
-        let mut hits = false;
-        let mut printdist = -666.0;
         for ray in rays {
             let mut closest_hit = None;
             for (i, tri_vertices) in self.scene.transformed_vertices.chunks(3).enumerate() {
@@ -253,13 +243,11 @@ impl RayTracer {
                     (None, Some(dist)) => {
                         if dist > 0.0 { 
                             closest_hit = Some(Hit::new(dist, i));
-                            printdist = dist;
                         }
                     },
                     (Some(hit), Some(dist)) => {
                         if dist > 0.0 && dist < hit.distance {
                             closest_hit = Some(Hit::new(dist, i));
-                            printdist = dist;
                         }
                     },
                 }
@@ -269,15 +257,12 @@ impl RayTracer {
                 Some(ref hit) => {
                     let rgb = RayTracer::shade(ray, hit, &self.scene.lights, &self.scene.transformed_vertices);
                     let c = RGBA::from_rgb(rgb, 1.0).to_u32();
-                    hits = true;
                     c
                 },
                 None => 0x00_00_00_00u32,
             };
             frame.push(coloru32);
         }
-        println!("printdist {}", printdist);
-        println!("hits {}",hits);
         frame
     }
 
@@ -352,7 +337,7 @@ mod camera {
                 transformed_rays,
                 x_angle_radians: 0.0,
                 y_angle_radians: 0.0,
-                pos: Vec3::new(0.0, 0.0, 0.0),
+                pos: Vec3::new(-0.5, -0.5, -1.0),
                 orientation_changed: true,
             }
         }

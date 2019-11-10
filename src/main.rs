@@ -71,8 +71,11 @@ fn main() {
                         cube_rot_y -= 10.0*3.141592/180.0;
                     },
                     softcanvas::glfw::WindowEvent::CursorPos(x,y) => {
-                        raytracer.camera.set_x_angle(y as f32 / 100.0);
-                        raytracer.camera.set_y_angle(x as f32 / 100.0);
+                        println!("cursorspos {} {}",x,y);
+                        let nx = x as f32 / WIDTH as f32;
+                        let ny = y as f32 / HEIGHT as f32;
+                        raytracer.camera.set_x_angle(-0.5 + ny);
+                        raytracer.camera.set_y_angle(-0.5 + nx);
                     }
                     _ => (),
                 }
