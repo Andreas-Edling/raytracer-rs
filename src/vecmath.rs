@@ -36,6 +36,8 @@ impl From<Vec4> for Vec3 {
 #[rustfmt::skip] impl std::ops::Mul< Vec3> for f32 { type Output = Vec3; fn mul(self, other: Vec3) -> Vec3 { Vec3::new(self * other.x, self * other.y, self * other.z) }}
 #[rustfmt::skip] impl std::ops::Mul<&Vec3> for f32 { type Output = Vec3; fn mul(self, other: &Vec3) -> Vec3 { Vec3::new(self * other.x, self * other.y, self * other.z) }}
 
+#[rustfmt::skip] impl std::ops::Neg for Vec3 { type Output = Vec3; fn neg(self) -> Self::Output { Vec3::new(-self.x, -self.y, -self.z) }}
+
 
 
 #[derive(PartialEq, Debug, Clone)]

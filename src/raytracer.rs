@@ -192,10 +192,6 @@ pub struct RayTracer {
     width: usize,
     height: usize,
     pub camera: camera::Camera,
-
-    // debug stuff, remove later
-    last_ray: Ray,
-    last_ray_to_light: Ray,
 }
 
 struct Hit {
@@ -215,9 +211,6 @@ impl RayTracer {
             width,
             height,
             camera: camera::Camera::new(width, height),
-
-            last_ray: Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0)),
-            last_ray_to_light: Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0)),
         }
     }
 
@@ -261,29 +254,48 @@ impl RayTracer {
     fn shade(ray: &Ray, hit: &Hit, lights: &[Light], vertices: &[Vertex]) -> RGB {
         let mut accum_color = RGB::new(1.0, 0.0, 0.0);
         let hit_point = &ray.pos + hit.distance * &ray.dir;
-        'outer: for light in lights {
 
+        for light in lights {
                 let ray_to_light = Ray::new(hit_point.clone(), &light.pos - &hit_point);
-
-                // is light blocked by geometry?
-                // for tri_vertices in vertices.chunks(3) {
-                //     if let Some(t) = intersect(&ray_to_light, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]) {
-                //         if t > 0.0001 && t < 1.0 {
-                //             continue 'outer;
-                //         }
-                //     }
-                // }
 
                 let normal = cross( 
                     &(&vertices[hit.vertex_index+1] - &vertices[hit.vertex_index]), 
                     &(&vertices[hit.vertex_index+2] - &vertices[hit.vertex_index]));
                 let normal = normal.normalized();
 
-                let val = dot(&normal, &ray_to_light.dir.normalized());
+                let dot_light_normal = dot(&normal, &ray_to_light.dir.normalized());
             
-                if val>0.0 {
-                    accum_color += val * &light.color;
+                if dot_light_normal < 0.0 {
+                    continue;  // triangle is facing away from light
                 }
+
+                //is light blocked by (other) geometry?
+                let mut blocked = false;
+                for tri_vertices in vertices.chunks(3) {
+                    if let Some(t) = intersect(&ray_to_light, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]) {
+                        if t > 0.0001 && t < 1.0 {
+                            blocked = true;
+                            break;
+                        }
+                    }
+                };
+
+                if !blocked {
+                    //lambertian / diffuse
+                    //accum_color += dot_light_normal * &light.color; 
+
+                    // phong
+                    {
+                        const SPECULAR: f32 = 0.5;
+                        const DIFFUSE: f32 = 0.5;
+                        const SHININESS: f32 = 32.0;
+                        let view_ray = -ray.dir.normalized(); 
+                        let reflected_light = 2.0*dot_light_normal*normal - ray_to_light.dir.normalized();
+                        accum_color += (DIFFUSE*dot_light_normal + SPECULAR*dot(&view_ray, &reflected_light).powf(SHININESS)) * &light.color;
+                    }
+
+                }
+                
         }
         accum_color
     }

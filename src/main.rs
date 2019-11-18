@@ -14,11 +14,6 @@ fn main() {
 
         let mut raytracer = raytracer::RayTracer::new(WIDTH, HEIGHT, scene);
         let mut last_time = std::time::Instant::now();
-
-        // debug vals, reset to 0
-        raytracer.camera.move_rel(-0.3,0.0,0.0);
-        // let mut cube_rot_x = 4.0*10.0*3.141592/180.0;
-        // let mut cube_rot_y = 4.0*10.0*3.141592/180.0;
         let mut cube_rot_x = 0.0;
         let mut cube_rot_y = 0.0;
 
@@ -88,7 +83,7 @@ fn main() {
             let now = std::time::Instant::now();
             let frame_duration: std::time::Duration = now - last_time;
             last_time = now;
-            //println!("frame duration: {:?}", frame_duration);
+            println!("fps: {:?}  frame duration: {:?}", 1.0/frame_duration.as_secs_f32(), frame_duration);
         }
     });
 
