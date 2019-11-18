@@ -82,11 +82,11 @@ impl Scene {
 
         // near / far
         vertices.push(Vertex::new(LEFT, DOWN, NEAR));
+        vertices.push(Vertex::new(RIGHT, UP, NEAR));
         vertices.push(Vertex::new(RIGHT, DOWN, NEAR));
-        vertices.push(Vertex::new(RIGHT, UP, NEAR));
         vertices.push(Vertex::new(LEFT, DOWN, NEAR));
-        vertices.push(Vertex::new(RIGHT, UP, NEAR));
         vertices.push(Vertex::new(LEFT, UP, NEAR));
+        vertices.push(Vertex::new(RIGHT, UP, NEAR));
         vertices.push(Vertex::new(LEFT, DOWN, FAR));
         vertices.push(Vertex::new(RIGHT, DOWN, FAR));
         vertices.push(Vertex::new(RIGHT, UP, FAR));
@@ -116,11 +116,11 @@ impl Scene {
         vertices.push(Vertex::new(LEFT, UP, FAR));
         vertices.push(Vertex::new(RIGHT, UP, FAR));
         vertices.push(Vertex::new(LEFT, DOWN, NEAR));
-        vertices.push(Vertex::new(RIGHT, DOWN, FAR));
         vertices.push(Vertex::new(RIGHT, DOWN, NEAR));
-        vertices.push(Vertex::new(LEFT, DOWN, NEAR));
-        vertices.push(Vertex::new(LEFT, DOWN, FAR));
         vertices.push(Vertex::new(RIGHT, DOWN, FAR));
+        vertices.push(Vertex::new(LEFT, DOWN, NEAR));
+        vertices.push(Vertex::new(RIGHT, DOWN, FAR));
+        vertices.push(Vertex::new(LEFT, DOWN, FAR));
 
         let transformed_vertices = vertices.clone();
 

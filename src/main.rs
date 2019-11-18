@@ -17,8 +17,10 @@ fn main() {
 
         // debug vals, reset to 0
         raytracer.camera.move_rel(-0.3,0.0,0.0);
-        let mut cube_rot_x = 4.0*10.0*3.141592/180.0;
-        let mut cube_rot_y = 4.0*10.0*3.141592/180.0;
+        // let mut cube_rot_x = 4.0*10.0*3.141592/180.0;
+        // let mut cube_rot_y = 4.0*10.0*3.141592/180.0;
+        let mut cube_rot_x = 0.0;
+        let mut cube_rot_y = 0.0;
 
         loop {
             let cube_matrix = vecmath::Matrix::rot_x(cube_rot_x);
