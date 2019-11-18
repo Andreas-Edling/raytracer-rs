@@ -11,11 +11,14 @@ fn main() {
     #[rustfmt::skip]
     std::thread::spawn(move || {
         let scene = raytracer::Scene::test_box();
-        let mut cube_rot_x = 0.0;
-        let mut cube_rot_y = 0.0;
 
         let mut raytracer = raytracer::RayTracer::new(WIDTH, HEIGHT, scene);
         let mut last_time = std::time::Instant::now();
+
+        // debug vals, reset to 0
+        raytracer.camera.move_rel(-0.3,0.0,0.0);
+        let mut cube_rot_x = 4.0*10.0*3.141592/180.0;
+        let mut cube_rot_y = 4.0*10.0*3.141592/180.0;
 
         loop {
             let cube_matrix = vecmath::Matrix::rot_x(cube_rot_x);
@@ -83,7 +86,7 @@ fn main() {
             let now = std::time::Instant::now();
             let frame_duration: std::time::Duration = now - last_time;
             last_time = now;
-            println!("frame duration: {:?}", frame_duration);
+            //println!("frame duration: {:?}", frame_duration);
         }
     });
 

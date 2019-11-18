@@ -34,11 +34,11 @@ struct RGBA {
 }
 impl RGBA {
     fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
-        RGBA { r, g, b, a }
+        RGBA{r, g, b, a}
     }
 
     fn from_rgb(rgb: RGB, a: f32) -> Self {
-        RGBA{ r: rgb.r, g: rgb.g, b: rgb.b, a}
+        RGBA::new( rgb.r, rgb.g, rgb.b, a)
     }
 
     fn to_u32(&self) -> u32 {
@@ -70,21 +70,6 @@ pub struct Scene {
     transformed_vertices: Vec<Vertex>,
 }
 impl Scene {
-    pub fn test_triangle() -> Self {
-        let mut vertices = Vec::with_capacity(3);
-        vertices.push(Vertex::new(0.0, 0.0, 1.0));
-        vertices.push(Vertex::new(1.0, 0.0, 1.0));
-        vertices.push(Vertex::new(0.5, 0.8, 1.0));
-
-        let transformed_vertices = vertices.clone();
-
-        let lights = vec![Light::new(
-            Pos::new(0.0, 0.0, 0.0),
-            RGB::new(1.0, 1.0, 1.0),
-        )];
-
-        Scene { vertices, lights, transformed_vertices }
-    }
 
     pub fn test_box() -> Self {
         let mut vertices = Vec::with_capacity(36);
@@ -156,16 +141,16 @@ impl Scene {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Ray {
     pos: Pos,
     dir: Vec3,
 }
 impl Ray {
-    fn new<P: Into<Pos>, V: Into<Vec3>>(pos: P, dir: V) -> Self {
+    const fn new(pos: Pos, dir: Vec3) -> Self {
         Ray {
-            pos: pos.into(),
-            dir: dir.into(),
+            pos,
+            dir,
         }
     }
 }
@@ -207,6 +192,10 @@ pub struct RayTracer {
     width: usize,
     height: usize,
     pub camera: camera::Camera,
+
+    // debug stuff, remove later
+    last_ray: Ray,
+    last_ray_to_light: Ray,
 }
 
 struct Hit {
@@ -226,6 +215,9 @@ impl RayTracer {
             width,
             height,
             camera: camera::Camera::new(width, height),
+
+            last_ray: Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0)),
+            last_ray_to_light: Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0)),
         }
     }
 
@@ -242,12 +234,12 @@ impl RayTracer {
                     (Some(_), None) => (),
                     (None, Some(dist)) => {
                         if dist > 0.0 { 
-                            closest_hit = Some(Hit::new(dist, i));
+                            closest_hit = Some(Hit::new(dist, i*3));
                         }
                     },
                     (Some(hit), Some(dist)) => {
                         if dist > 0.0 && dist < hit.distance {
-                            closest_hit = Some(Hit::new(dist, i));
+                            closest_hit = Some(Hit::new(dist, i*3));
                         }
                     },
                 }
@@ -267,12 +259,12 @@ impl RayTracer {
     }
 
     fn shade(ray: &Ray, hit: &Hit, lights: &[Light], vertices: &[Vertex]) -> RGB {
-
         let mut accum_color = RGB::new(1.0, 0.0, 0.0);
-        let hit_point = &ray.pos + hit.distance * &ray.dir ;
+        let hit_point = &ray.pos + hit.distance * &ray.dir;
         'outer: for light in lights {
 
-                 let ray_to_light = Ray::new(hit_point.clone(), &light.pos - &hit_point);
+                let ray_to_light = Ray::new(hit_point.clone(), &light.pos - &hit_point);
+
                 // is light blocked by geometry?
                 // for tri_vertices in vertices.chunks(3) {
                 //     if let Some(t) = intersect(&ray_to_light, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]) {
@@ -353,11 +345,6 @@ mod camera {
             self.y_angle_radians = radians;
         }
 
-        pub fn set_pos(&mut self, pos: Vec3) {
-            self.orientation_changed |= self.pos != pos;
-            self.pos = pos;
-        }
-
         pub fn add_x_angle(&mut self, radians: f32) {
             self.orientation_changed |= radians != 0.0;
             self.x_angle_radians += radians;
@@ -385,7 +372,7 @@ mod camera {
                     let pos = &pos_matrix * Vec4::from_vec3(&ray.pos);
                     let mut dir = &matrix * Vec4::from_vec3(&ray.dir);
                     dir.w = 1.0;
-                    self.transformed_rays[i] = Ray::new(pos, dir);
+                    self.transformed_rays[i] = Ray::new(pos.into(), dir.into());
                 }
                 self.orientation_changed = false;
             }
