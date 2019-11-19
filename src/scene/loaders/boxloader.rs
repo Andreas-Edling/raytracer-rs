@@ -1,7 +1,7 @@
 
 pub use super::SceneLoader;
 
-use super::{
+use crate::scene::{
     Scene, 
     Vertex,
     Pos,

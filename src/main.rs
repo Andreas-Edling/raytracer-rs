@@ -2,7 +2,7 @@ mod raytracer;
 mod scene;
 mod vecmath;
 
-use scene::boxloader::*;
+use scene::loaders::boxloader::*;
 
 fn main() {
     const WIDTH: usize = 640;

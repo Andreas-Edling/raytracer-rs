@@ -1,5 +1,5 @@
 
-pub mod boxloader;
+pub mod loaders;
 pub mod color;
 
 use crate::vecmath::*;
@@ -27,11 +27,6 @@ pub struct Scene {
     pub transformed_vertices: Vec<Vertex>,
 }
 
-
-pub trait SceneLoader {
-    fn from_str(s: &str) -> Result<Scene, &str>;
-    fn load() -> Result<Scene, &'static str>;
-}
 
 
 impl Scene {
