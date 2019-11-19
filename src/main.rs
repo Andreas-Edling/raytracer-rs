@@ -1,5 +1,8 @@
 mod raytracer;
+mod scene;
 mod vecmath;
+
+use scene::boxloader::*;
 
 fn main() {
     const WIDTH: usize = 640;
@@ -10,7 +13,7 @@ fn main() {
  
     #[rustfmt::skip]
     std::thread::spawn(move || {
-        let scene = raytracer::Scene::test_box();
+        let scene = BoxLoader::load().unwrap();
 
         let mut raytracer = raytracer::RayTracer::new(WIDTH, HEIGHT, scene);
         let mut last_time = std::time::Instant::now();

@@ -1,145 +1,13 @@
-use crate::vecmath::{cross, dot, Vec3, Vec4, Matrix};
+use crate::vecmath::{cross, dot, Vec3};
 
-type Pos = Vec3;
-type Vertex = Vec3;
+use crate::scene::{
+    Scene,
+    Pos,
+    Vertex,
+    color::{RGB, RGBA},
+    Light,
+};
 
-struct RGB {
-    r: f32,
-    g: f32,
-    b: f32,
-}
-impl RGB {
-    fn new(r: f32, g: f32, b: f32) -> Self {
-        RGB { r, g, b }
-    }
-}
-impl std::ops::AddAssign for RGB {
-    fn add_assign(&mut self, other: Self) {
-        self.r += other.r;
-        self.g += other.g;
-        self.b += other.b;
-    }
-}
-
-#[rustfmt::skip] impl std::ops::Mul<f32> for &RGB { type Output = RGB; fn mul(self, other: f32) -> RGB { RGB::new(self.r * other, self.g * other, self.b * other) }}
-#[rustfmt::skip] impl std::ops::Mul<f32> for  RGB { type Output = RGB; fn mul(self, other: f32) -> RGB { RGB::new(self.r * other, self.g * other, self.b * other) }}
-#[rustfmt::skip] impl std::ops::Mul< RGB> for f32 { type Output = RGB; fn mul(self, other: RGB) -> RGB { RGB::new(self * other.r, self * other.g, self * other.b) }}
-#[rustfmt::skip] impl std::ops::Mul<&RGB> for f32 { type Output = RGB; fn mul(self, other: &RGB) -> RGB { RGB::new(self * other.r, self * other.g, self * other.b) }}
-
-struct RGBA {
-    r: f32,
-    g: f32,
-    b: f32,
-    a: f32,
-}
-impl RGBA {
-    fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
-        RGBA{r, g, b, a}
-    }
-
-    fn from_rgb(rgb: RGB, a: f32) -> Self {
-        RGBA::new( rgb.r, rgb.g, rgb.b, a)
-    }
-
-    fn to_u32(&self) -> u32 {
-        let r = (self.r.min(1.0).max(0.0)*255.0) as u8;
-        let g = (self.g.min(1.0).max(0.0)*255.0) as u8;
-        let b = (self.b.min(1.0).max(0.0)*255.0) as u8;
-        let a = (self.a.min(1.0).max(0.0)*255.0) as u8;
-        let res = r as u32 | (g as u32) << 8 | (b as u32) << 16 | (a as u32) << 24;
-        res
-    }
-}
-
-
-
-pub struct Light {
-    pos: Pos,
-    color: RGB,
-}
-impl Light {
-    fn new(pos: Pos, color: RGB) -> Self {
-        Light { pos, color }
-    }
-}
-
-pub struct Scene {
-    vertices: Vec<Vertex>,
-    lights: Vec<Light>,
-
-    transformed_vertices: Vec<Vertex>,
-}
-impl Scene {
-
-    pub fn test_box() -> Self {
-        let mut vertices = Vec::with_capacity(36);
-        const LEFT: f32 = -0.5;
-        const RIGHT: f32 = 0.5;
-        const UP: f32 = 0.5;
-        const DOWN: f32 = -0.5;
-        const NEAR: f32 = -0.5;
-        const FAR: f32 = 0.5;
-
-        // near / far
-        vertices.push(Vertex::new(LEFT, DOWN, NEAR));
-        vertices.push(Vertex::new(RIGHT, UP, NEAR));
-        vertices.push(Vertex::new(RIGHT, DOWN, NEAR));
-        vertices.push(Vertex::new(LEFT, DOWN, NEAR));
-        vertices.push(Vertex::new(LEFT, UP, NEAR));
-        vertices.push(Vertex::new(RIGHT, UP, NEAR));
-        vertices.push(Vertex::new(LEFT, DOWN, FAR));
-        vertices.push(Vertex::new(RIGHT, DOWN, FAR));
-        vertices.push(Vertex::new(RIGHT, UP, FAR));
-        vertices.push(Vertex::new(LEFT, DOWN, FAR));
-        vertices.push(Vertex::new(RIGHT, UP, FAR));
-        vertices.push(Vertex::new(LEFT, UP, FAR));
-
-        // left / right
-        vertices.push(Vertex::new(LEFT, DOWN, NEAR));
-        vertices.push(Vertex::new(LEFT, DOWN, FAR));
-        vertices.push(Vertex::new(LEFT, UP, FAR));
-        vertices.push(Vertex::new(LEFT, DOWN, NEAR));
-        vertices.push(Vertex::new(LEFT, UP, FAR));
-        vertices.push(Vertex::new(LEFT, UP, NEAR));
-        vertices.push(Vertex::new(RIGHT, DOWN, NEAR));
-        vertices.push(Vertex::new(RIGHT, UP, FAR));
-        vertices.push(Vertex::new(RIGHT, DOWN, FAR));
-        vertices.push(Vertex::new(RIGHT, DOWN, NEAR));
-        vertices.push(Vertex::new(RIGHT, UP, NEAR));
-        vertices.push(Vertex::new(RIGHT, UP, FAR));
-
-        // up / down
-        vertices.push(Vertex::new(LEFT, UP, NEAR));
-        vertices.push(Vertex::new(RIGHT, UP, FAR));
-        vertices.push(Vertex::new(RIGHT, UP, NEAR));
-        vertices.push(Vertex::new(LEFT, UP, NEAR));
-        vertices.push(Vertex::new(LEFT, UP, FAR));
-        vertices.push(Vertex::new(RIGHT, UP, FAR));
-        vertices.push(Vertex::new(LEFT, DOWN, NEAR));
-        vertices.push(Vertex::new(RIGHT, DOWN, NEAR));
-        vertices.push(Vertex::new(RIGHT, DOWN, FAR));
-        vertices.push(Vertex::new(LEFT, DOWN, NEAR));
-        vertices.push(Vertex::new(RIGHT, DOWN, FAR));
-        vertices.push(Vertex::new(LEFT, DOWN, FAR));
-
-        let transformed_vertices = vertices.clone();
-
-        let lights = vec![Light::new(
-            Pos::new(RIGHT*3.0, UP*2.0, NEAR*2.0),
-            RGB::new(1.0, 1.0, 1.0),
-        )];
-
-
-        Scene { vertices, lights, transformed_vertices }
-    }
-
-    pub fn apply_transform(&mut self, mat: &Matrix) {
-        for (vtx, transformed_vtx) in self.vertices.iter().zip(self.transformed_vertices.iter_mut()) {
-                *transformed_vtx = Vec3::from(mat * Vec4::from_vec3(vtx));
-
-        }
-    }
-}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ray {
@@ -256,46 +124,44 @@ impl RayTracer {
         let hit_point = &ray.pos + hit.distance * &ray.dir;
 
         for light in lights {
-                let ray_to_light = Ray::new(hit_point.clone(), &light.pos - &hit_point);
+            let ray_to_light = Ray::new(hit_point.clone(), &light.pos - &hit_point);
 
-                let normal = cross( 
-                    &(&vertices[hit.vertex_index+1] - &vertices[hit.vertex_index]), 
-                    &(&vertices[hit.vertex_index+2] - &vertices[hit.vertex_index]));
-                let normal = normal.normalized();
+            let normal = cross( 
+                &(&vertices[hit.vertex_index+1] - &vertices[hit.vertex_index]), 
+                &(&vertices[hit.vertex_index+2] - &vertices[hit.vertex_index]));
+            let normal = normal.normalized();
 
-                let dot_light_normal = dot(&normal, &ray_to_light.dir.normalized());
-            
-                if dot_light_normal < 0.0 {
-                    continue;  // triangle is facing away from light
-                }
+            let dot_light_normal = dot(&normal, &ray_to_light.dir.normalized());
+        
+            if dot_light_normal < 0.0 {
+                continue;  // triangle is facing away from light
+            }
 
-                //is light blocked by (other) geometry?
-                let mut blocked = false;
-                for tri_vertices in vertices.chunks(3) {
-                    if let Some(t) = intersect(&ray_to_light, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]) {
-                        if t > 0.0001 && t < 1.0 {
-                            blocked = true;
-                            break;
-                        }
+            //is light blocked by (other) geometry?
+            let mut blocked = false;
+            for tri_vertices in vertices.chunks(3) {
+                if let Some(t) = intersect(&ray_to_light, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]) {
+                    if t > 0.0001 && t < 1.0 {
+                        blocked = true;
+                        break;
                     }
-                };
-
-                if !blocked {
-                    //lambertian / diffuse
-                    //accum_color += dot_light_normal * &light.color; 
-
-                    // phong
-                    {
-                        const SPECULAR: f32 = 0.5;
-                        const DIFFUSE: f32 = 0.5;
-                        const SHININESS: f32 = 32.0;
-                        let view_ray = -ray.dir.normalized(); 
-                        let reflected_light = 2.0*dot_light_normal*normal - ray_to_light.dir.normalized();
-                        accum_color += (DIFFUSE*dot_light_normal + SPECULAR*dot(&view_ray, &reflected_light).powf(SHININESS)) * &light.color;
-                    }
-
                 }
-                
+            };
+
+            if !blocked {
+                //lambertian / diffuse
+                //accum_color += dot_light_normal * &light.color; 
+
+                // phong
+                {
+                    const SPECULAR: f32 = 0.5;
+                    const DIFFUSE: f32 = 0.5;
+                    const SHININESS: f32 = 32.0;
+                    let view_ray = -ray.dir.normalized(); 
+                    let reflected_light = 2.0*dot_light_normal*normal - ray_to_light.dir.normalized();
+                    accum_color += (DIFFUSE*dot_light_normal + SPECULAR*dot(&view_ray, &reflected_light).powf(SHININESS)) * &light.color;
+                }
+            }
         }
         accum_color
     }
@@ -349,7 +215,6 @@ mod camera {
         pub fn set_x_angle(&mut self, radians: f32) {
             self.orientation_changed |= self.x_angle_radians != radians;
             self.x_angle_radians = radians;
-
         }
 
         pub fn set_y_angle(&mut self, radians: f32) {
