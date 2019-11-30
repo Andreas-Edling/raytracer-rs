@@ -98,6 +98,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "parseval"
+version = "0.1.0"
+
+[[package]]
 name = "raw-window-handle"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -109,6 +113,7 @@ dependencies = [
 name = "raytracer-rs"
 version = "0.1.0"
 dependencies = [
+ "parseval 0.1.0",
  "softcanvas 0.1.0",
 ]
 

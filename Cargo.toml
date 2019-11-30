@@ -8,7 +8,5 @@ edition = "2018"
 
 [dependencies]
 
-# glfw = "0.33.0"
-# gl = "0.14.0"
-
 softcanvas = { path = "../../softcanvas"}
+parseval ={ path = "../../parseval"}
