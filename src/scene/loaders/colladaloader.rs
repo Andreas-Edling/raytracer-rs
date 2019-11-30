@@ -3,24 +3,41 @@ use parseval::{
     parsers::*
 };
 
-
-pub use super::SceneLoader;
-
 use crate::scene::{
-    //Scene, 
-    //Vertex,
-    //Pos,
-    //color::RGB,
-    //Light,
+    Scene, 
+    Vertex,
+    Pos,
+    color::RGB,
+    Light,
 };
 
 
+
+pub use super::SceneLoader;
+
+pub struct ColladaLoader {}
+
+impl SceneLoader for ColladaLoader {
+    fn from_str(doc: &str) -> Result<Scene, String> {
+        let collada = Collada::parse(doc)?;
+        collada.to_scene_flatten()
+    }
+
+    fn load() -> Result<Scene, String> {
+        Self::from_str(COLLADA_DOC)
+    }
+}
+
+
+
+
 pub struct Collada {
-    cameras: Vec<Camera>,
-    lights: Vec<Light>,
-    effects: Vec<Effect>,
-    materials: Vec<Material>,
-    geometries: Vec<Geometry>,
+    cameras: Vec<Col_Camera>,
+    lights: Vec<Col_Light>,
+    effects: Vec<Col_Effect>,
+    materials: Vec<Col_Material>,
+    geometries: Vec<Col_Geometry>,
+    visual_scenes: Vec<Col_VisualScene>
 }
 impl Collada {
     pub fn dummy() -> Self {
@@ -30,20 +47,103 @@ impl Collada {
             effects: Vec::new(),
             materials: Vec::new(),
             geometries: Vec::new(),
+            visual_scenes: Vec::new(),
         }
+    }
+
+    pub fn parse(input: &str) -> Result<Collada, String> {
+
+        let (remaining, _xml_version) = xml::xml_definition_element().parse(input)?;  //<?xml version="1.0" encoding="utf-8"?>
+        let (remaining, collada_elem) = xml::opening_element().parse(remaining)?;
+        if collada_elem.name != "COLLADA" { return Err("not a collada doc".to_string()); }
+        let (remaining, _asset_element) = xml::element_with_name("asset".to_string()).parse(remaining)?;
+        let (remaining, cameras_element) = xml::element_with_name("library_cameras".to_string()).parse(remaining)?;
+        let (remaining, lights_element) = xml::element_with_name("library_lights".to_string()).parse(remaining)?;
+        let (remaining, effects_element) = xml::element_with_name("library_effects".to_string()).parse(remaining)?;
+        let (remaining, _images_element) = xml::element_with_name("library_images".to_string()).parse(remaining)?;
+        let (remaining, materials_element) = xml::element_with_name("library_materials".to_string()).parse(remaining)?;
+        let (remaining, geometries_element) = xml::element_with_name("library_geometries".to_string()).parse(remaining)?;
+        let (remaining, visual_scenes_element) = xml::element_with_name("library_visual_scenes".to_string()).parse(remaining)?;
+        let (remaining, _scene_element) = xml::element_with_name("scene".to_string()).parse(remaining)?;
+        let (remaining, _) = xml::closing_element("COLLADA".to_string()).parse(remaining)?;
+
+        assert_eq!(remaining.len(),0);
+
+        let cameras = to_cameras(&cameras_element)?;
+        let lights = to_lights(&lights_element)?;
+        let effects = to_effects(&effects_element)?;
+        let materials = to_materials(&materials_element)?;
+        let geometries = to_geometries(&geometries_element)?;
+        let visual_scenes = to_visual_scenes(&visual_scenes_element)?;
+
+        Ok( 
+            Collada {
+                cameras,
+                lights,
+                effects,
+                materials,
+                geometries,
+                visual_scenes,
+            }
+        )
+    }
+
+    pub fn to_scene_flatten(&self) -> Result<Scene, String> {
+        let mut vertices = vec![];
+        
+        for geometry in &self.geometries {
+            for tri_vtx_indices in geometry.triangles.chunks(3) {
+                vertices.push(Vertex::new( 
+                        geometry.vertices[3*tri_vtx_indices[0] as usize],
+                        geometry.vertices[3*tri_vtx_indices[0] as usize + 1],
+                        geometry.vertices[3*tri_vtx_indices[0] as usize + 2],
+                ));
+                vertices.push(Vertex::new( 
+                        geometry.vertices[3*tri_vtx_indices[1] as usize],
+                        geometry.vertices[3*tri_vtx_indices[1] as usize + 1],
+                        geometry.vertices[3*tri_vtx_indices[1] as usize + 2],
+                ));
+                vertices.push(Vertex::new( 
+                        geometry.vertices[3*tri_vtx_indices[2] as usize],
+                        geometry.vertices[3*tri_vtx_indices[2] as usize + 1],
+                        geometry.vertices[3*tri_vtx_indices[2] as usize + 2],
+                ));
+            }
+        }
+        let transformed_vertices = vertices.clone();
+
+        let mut lights = vec![];
+        lights.push( Light::new(Pos::new(1.0,1.0,1.0), RGB::new(1.0, 1.0, 1.0)));
+
+        Ok(Scene {
+            vertices,
+            lights,
+            transformed_vertices,
+        })
     }
 }
 
-struct Asset {}
-struct Camera {}
-struct Light {}
-struct Effect {}
-struct Image {}
-struct Material {}
-struct Geometry {}
-struct VisualScene {}
-struct Scene {}
+struct Col_Asset {}
+struct Col_Camera {}
+struct Col_Light {}
+struct Col_Effect {}
+struct Col_Image {}
+struct Col_Material {}
+struct Col_Geometry {
+    vertices: Vec<f32>,
+    triangles: Vec<u32>,
+    name: String,
+}
+struct Col_VisualScene {
+    nodes: Vec<VisualSceneNode>,
+}
+struct Col_Scene {}
 
+
+struct VisualSceneNode {
+    name: String,
+    matrix: crate::vecmath::Matrix,
+}
 
 fn get_attrib_value<'a>(element: &'a xml::Element, expected_attrib_name: String) -> Result<&'a str, String> {
     for (attrib_name, attrib_val) in &element.attributes {
@@ -78,78 +178,115 @@ fn get_child_by_name(parent: &xml::Element, name: String) -> Result<&xml::Elemen
     Err(format!("cant find child by name: {}", name))
 }
 
-fn convert_geometry(geometry_element: &xml::Element) -> Result<Geometry, String> {
+
+fn parse_array_f32<'a>() -> impl Parser<'a, Vec<f32>> {
+    let number_str = 
+    one_or_more(
+        pred(
+            any_char,
+            |c| c.is_ascii_digit() || *c == '-' || *c == '.'
+        )
+    );
+
+    let number = map(
+        left(number_str, whitespace0()),
+        |chars| {
+            let string: String = chars.into_iter().collect();
+            let num = string.parse::<f32>().unwrap();
+            num
+        }
+    );
+
+    zero_or_more(number)
+}
+
+fn parse_array_u32<'a>() -> impl Parser<'a, Vec<u32>> {
+    let number_str = 
+    one_or_more(
+        pred(
+            any_char,
+            |c| c.is_ascii_digit() || *c == '-' || *c == '.'
+        )
+    );
+
+    let number = map(
+        left(number_str, whitespace0()),
+        |chars| {
+            let string: String = chars.into_iter().collect();
+            let num = string.parse::<u32>().unwrap();
+            num
+        }
+    );
+
+    zero_or_more(number)
+}
+
+fn convert_geometry(geometry_element: &xml::Element) -> Result<Col_Geometry, String> {
+    let geometry_name = get_attrib_value(geometry_element, "name".to_string())?;
     let id = get_attrib_value(geometry_element, "id".to_string())?;
     let mesh = get_child_by_name(geometry_element, "mesh".to_string())?;
-    Ok(Geometry{})
-}
 
-fn to_cameras(lights_elem: &xml::Element) -> Result<Vec<Camera>, String> {
-    Ok(vec![])
-}
-
-fn to_lights(lights_elem: &xml::Element) -> Result<Vec<Light>, String> {
-    Ok(vec![])
-}
-
-fn to_effects(lights_elem: &xml::Element) -> Result<Vec<Effect>, String> {
-    Ok(vec![])
-}
-
-fn to_materials(lights_elem: &xml::Element) -> Result<Vec<Material>, String> {
-    Ok(vec![])
-}
-
-fn to_geometries(lights_elem: &xml::Element) -> Result<Vec<Geometry>, String> {
-    Ok(vec![])
-}
-
-impl Collada {
-    pub fn parse(input: &str) -> Result<Collada, String> {
-
-        let (remaining, xml_version) = xml::xml_definition_element().parse(input)?;  //<?xml version="1.0" encoding="utf-8"?>
-        let (remaining, collada_elem) = xml::opening_element().parse(remaining)?;
-        if collada_elem.name != "COLLADA" { return Err("not a collada doc".to_string()); }
-        let (remaining, asset_element) = xml::element_with_name("asset".to_string()).parse(remaining)?;
-        let (remaining, cameras_element) = xml::element_with_name("library_cameras".to_string()).parse(remaining)?;
-        let (remaining, lights_element) = xml::element_with_name("library_lights".to_string()).parse(remaining)?;
-        let (remaining, effects_element) = xml::element_with_name("library_effects".to_string()).parse(remaining)?;
-        let (remaining, _images_element) = xml::element_with_name("library_images".to_string()).parse(remaining)?;
-        let (remaining, materials_element) = xml::element_with_name("library_materials".to_string()).parse(remaining)?;
-        let (remaining, geometries_element) = xml::element_with_name("library_geometries".to_string()).parse(remaining)?;
-        let (remaining, _visual_scenes_element) = xml::element_with_name("library_visual_scenes".to_string()).parse(remaining)?;
-        let (remaining, _scene_element) = xml::element_with_name("scene".to_string()).parse(remaining)?;
-        let (remaining, _) = xml::closing_element("COLLADA".to_string()).parse(remaining)?;
-
-        assert_eq!(remaining.len(),0);
-
-        let cameras = to_cameras(&cameras_element)?;
-        let lights = to_lights(&lights_element)?;
-        let effects = to_effects(&effects_element)?;
-        let materials = to_materials(&materials_element)?;
-        let geometries = to_geometries(&geometries_element)?;
-
-        Ok( 
-            Collada {
-                cameras,
-                lights,
-                effects,
-                materials,
-                geometries,
-            }
-        )
+    // get vertex positions
+    let mut vertices = vec![];
+    let positions_source = get_child_by_attrib(mesh, ("id".to_string(),format!("{}-positions",id)))?;
+    let positions_array = get_child_by_attrib(positions_source, ("id".to_string(), format!("{}-positions-array",id)))?;
+    if let xml::DataOrElements::Data(vertices_str) = &positions_array.data_or_elements {
+        let (_, parsed_vertices) = parse_array_f32().parse(vertices_str)?;
+        vertices = parsed_vertices;
     }
 
-    pub fn to_scene_flatten(&self) -> Result<Scene, &str> {
-        //let vertices = vec![];
-        //let lights = vec![];
-
-        // for geometry in &self.geometries {
-        //     geometry.
-        // }
-        Err("not implemented")
+    // get triangle indices
+    let mut triangles = vec![];
+    let triangles_element = get_child_by_name(mesh, "triangles".to_string())?;
+    let index_array = get_child_by_name(triangles_element, "p".to_string())?;
+    if let xml::DataOrElements::Data(triangle_indices_str) = &index_array.data_or_elements {
+        let (_, parsed_index_array) = parse_array_u32().parse(triangle_indices_str)?;
+        for (pos_index, _normal_index, _texcoord_index) in parsed_index_array.chunks(3).map(|indices| (indices[0], indices[1], indices[2])) {
+            triangles.push(pos_index);
+        }
     }
+
+    Ok(
+        Col_Geometry {
+            vertices,
+            triangles,
+            name: geometry_name.to_string(),
+        }
+    )
 }
+
+fn to_cameras(elem: &xml::Element) -> Result<Vec<Col_Camera>, String> {
+    Ok(vec![])
+}
+
+fn to_lights(elem: &xml::Element) -> Result<Vec<Col_Light>, String> {
+    Ok(vec![])
+}
+
+fn to_effects(elem: &xml::Element) -> Result<Vec<Col_Effect>, String> {
+    Ok(vec![])
+}
+
+fn to_materials(elem: &xml::Element) -> Result<Vec<Col_Material>, String> {
+    Ok(vec![])
+}
+
+fn to_geometries(elem: &xml::Element) -> Result<Vec<Col_Geometry>, String> {
+    if let xml::DataOrElements::Elements(geometry_elements) = &elem.data_or_elements {
+        let mut geometries = vec![];
+        for geometry_elem in geometry_elements {
+            geometries.push(convert_geometry(geometry_elem)?);
+        }
+        return Ok(geometries);
+    }
+    Err("cant convert geometries".to_string())
+}
+
+fn to_visual_scenes(elem: &xml::Element) -> Result<Vec<Col_VisualScene>, String> {
+
+    Ok(vec![])
+}
+
 
 
 mod tests {
@@ -165,8 +302,9 @@ mod tests {
         }
         assert!(parsed.is_ok());
     }
+}
 
-    const COLLADA_DOC: &str = r##"<?xml version="1.0" encoding="utf-8"?>
+const COLLADA_DOC: &str = r##"<?xml version="1.0" encoding="utf-8"?>
     <COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <asset>
         <contributor>
@@ -340,6 +478,3 @@ mod tests {
         <instance_visual_scene url="#Scene"/>
     </scene>
     </COLLADA>"##;
-
-
-}

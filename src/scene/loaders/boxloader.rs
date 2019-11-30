@@ -12,11 +12,11 @@ use crate::scene::{
 pub struct BoxLoader {}
 
 impl SceneLoader for BoxLoader {
-    fn from_str(_s: &str) -> Result<Scene, &str> {
-        Err("not implemented for BoxLoader")
+    fn from_str(_s: &str) -> Result<Scene, String> {
+        Err("not implemented for BoxLoader".to_string())
     }
 
-    fn load() -> Result<Scene, &'static str> {
+    fn load() -> Result<Scene, String> {
         let mut vertices = Vec::with_capacity(36);
         const LEFT: f32 = -0.5;
         const RIGHT: f32 = 0.5;

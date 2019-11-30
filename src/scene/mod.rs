@@ -21,7 +21,7 @@ impl Light {
 
 
 pub struct Scene {
-    vertices: Vec<Vertex>,
+    pub vertices: Vec<Vertex>,
     pub lights: Vec<Light>,
 
     pub transformed_vertices: Vec<Vertex>,

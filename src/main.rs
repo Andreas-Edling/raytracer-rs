@@ -2,7 +2,15 @@ mod raytracer;
 mod scene;
 mod vecmath;
 
-use scene::loaders::boxloader::*;
+use std::fs::File;
+use std::io::prelude::*;
+
+use scene::loaders::{
+    SceneLoader,
+    boxloader::BoxLoader,
+    colladaloader::ColladaLoader,
+};
+
 
 fn main() {
     const WIDTH: usize = 640;
@@ -13,7 +21,15 @@ fn main() {
  
     #[rustfmt::skip]
     std::thread::spawn(move || {
-        let scene = BoxLoader::load().unwrap();
+        //let scene = BoxLoader::load().unwrap();
+
+        let contents = {
+            let mut file = File::open("c:/source/rust/raytracer/data/4boxes.dae").unwrap();
+            let mut contents = String::new();
+            file.read_to_string(&mut contents);
+            contents
+        };
+        let scene = ColladaLoader::from_str(&contents).unwrap();
 
         let mut raytracer = raytracer::RayTracer::new(WIDTH, HEIGHT, scene);
         let mut last_time = std::time::Instant::now();
