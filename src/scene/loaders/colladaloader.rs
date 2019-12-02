@@ -90,28 +90,45 @@ impl Collada {
 
     pub fn to_scene_flatten(&self) -> Result<Scene, String> {
         let mut vertices = vec![];
-        
-        for geometry in &self.geometries {
-            for tri_vtx_indices in geometry.triangles.chunks(3) {
-                vertices.push(Vertex::new( 
-                        geometry.vertices[3*tri_vtx_indices[0] as usize],
-                        geometry.vertices[3*tri_vtx_indices[0] as usize + 1],
-                        geometry.vertices[3*tri_vtx_indices[0] as usize + 2],
-                ));
-                vertices.push(Vertex::new( 
-                        geometry.vertices[3*tri_vtx_indices[1] as usize],
-                        geometry.vertices[3*tri_vtx_indices[1] as usize + 1],
-                        geometry.vertices[3*tri_vtx_indices[1] as usize + 2],
-                ));
-                vertices.push(Vertex::new( 
-                        geometry.vertices[3*tri_vtx_indices[2] as usize],
-                        geometry.vertices[3*tri_vtx_indices[2] as usize + 1],
-                        geometry.vertices[3*tri_vtx_indices[2] as usize + 2],
-                ));
+                println!("visual_scene!");
+        for visual_scene in &self.visual_scenes {
+            for node in &visual_scene.nodes {
+                for geometry in &self.geometries {
+                    if geometry.name != node.name {
+                        continue;
+                    }
+
+                    let mut geom_vertices = vec![];
+                    for tri_vtx_indices in geometry.triangles.chunks(3) {
+                        geom_vertices.push(Vertex::new( 
+                            geometry.vertices[3*tri_vtx_indices[0] as usize],
+                            geometry.vertices[3*tri_vtx_indices[0] as usize + 1],
+                            geometry.vertices[3*tri_vtx_indices[0] as usize + 2],
+                        ));
+                        geom_vertices.push(Vertex::new( 
+                            geometry.vertices[3*tri_vtx_indices[1] as usize],
+                            geometry.vertices[3*tri_vtx_indices[1] as usize + 1],
+                            geometry.vertices[3*tri_vtx_indices[1] as usize + 2],
+                        ));
+                        geom_vertices.push(Vertex::new( 
+                            geometry.vertices[3*tri_vtx_indices[2] as usize],
+                            geometry.vertices[3*tri_vtx_indices[2] as usize + 1],
+                            geometry.vertices[3*tri_vtx_indices[2] as usize + 2],
+                        ));
+                    }
+
+                    println!("{}",node.matrix);
+                    for vertex in geom_vertices.iter() {
+                        let transformed = crate::vecmath::Vec3::from(&node.matrix.transpose() * crate::vecmath::Vec4::from_vec3(vertex));
+                        println!("vertex, transformed {:?} {:?}", vertex, transformed);
+                        vertices.push(transformed);
+                    }
+                    break;
+                }
             }
         }
-        let transformed_vertices = vertices.clone();
 
+        let transformed_vertices = vertices.clone();
         let mut lights = vec![];
         lights.push( Light::new(Pos::new(1.0,1.0,1.0), RGB::new(1.0, 1.0, 1.0)));
 
@@ -143,6 +160,14 @@ struct Col_Scene {}
 struct VisualSceneNode {
     name: String,
     matrix: crate::vecmath::Matrix,
+}
+impl VisualSceneNode {
+    pub fn new(name: String, matrix: crate::vecmath::Matrix) -> Self {
+        VisualSceneNode {
+            name,
+            matrix,
+        }
+    }
 }
 
 fn get_attrib_value<'a>(element: &'a xml::Element, expected_attrib_name: String) -> Result<&'a str, String> {
@@ -283,8 +308,32 @@ fn to_geometries(elem: &xml::Element) -> Result<Vec<Col_Geometry>, String> {
 }
 
 fn to_visual_scenes(elem: &xml::Element) -> Result<Vec<Col_VisualScene>, String> {
+    if let xml::DataOrElements::Elements(scenes) = &elem.data_or_elements {
+        let mut nodes = vec![];
+        for scene in scenes {
+            if let xml::DataOrElements::Elements(node_elements) = &scene.data_or_elements {
+                for node_elem in node_elements {
+                    let name = get_attrib_value(node_elem, "name".to_string())?.to_string();
+                    let matrix_elem = get_child_by_name(node_elem, "matrix".to_string())?;
+                    if let xml::DataOrElements::Data(matrix_data) = &matrix_elem.data_or_elements {
+                        let (_,matrix_array) = parse_array_f32().parse(matrix_data)?;
+                        if let Some(matrix) = crate::vecmath::Matrix::from_slice(&matrix_array[..]) {
+                            nodes.push(VisualSceneNode::new(name, matrix));
+                        }
+                    }
+                }
+            }
+        }
+        return Ok(
+            vec![
+                Col_VisualScene {
+                    nodes
+                }
+            ]
+        );
+    }
 
-    Ok(vec![])
+    Err("No scene element(s)".to_string())
 }
 
 

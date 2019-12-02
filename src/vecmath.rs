@@ -75,11 +75,26 @@ pub fn cross(v0: &Vec3, v1: &Vec3) -> Vec3 {
     )
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Copy, Clone)]
 pub struct Matrix {
     e: [f32; 16],
 }
 impl Matrix {
+    pub fn new(elems: &[f32;16]) -> Self {
+        Matrix { e: *elems }
+    }
+
+    pub fn from_slice(elems: &[f32]) -> Option<Self> {
+        if elems.len()<16 {
+            return None;
+        }
+
+        let mut array = [0.0; 16];
+        let elems = &elems[..16];
+        array.copy_from_slice(elems); 
+        Some(Matrix{ e: array })
+    }
+
     pub fn ident() -> Self {
         let mut m = Matrix { e: [0.0; 16] };
         m.e[0] = 1.0;
@@ -113,8 +128,43 @@ impl Matrix {
         m.e[14] = v.z;
         m
     }
+
+    pub fn transpose(&self) -> Self {
+        let mut m = *self;
+        m.e[1] = self.e[4];
+        m.e[2] = self.e[8];
+        m.e[3] = self.e[12];
+
+        m.e[4] = self.e[1];
+        m.e[6] = self.e[9];
+        m.e[7] = self.e[13];
+
+        m.e[8] = self.e[2];
+        m.e[9] = self.e[6];
+        m.e[11] = self.e[14];
+
+        m.e[12] = self.e[3];
+        m.e[13] = self.e[7];
+        m.e[14] = self.e[11];
+        m
+    }
 }
 
+impl std::fmt::Display for Matrix {
+    // This trait requires `fmt` with this exact signature.
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        // Write strictly the first element into the supplied output
+        // stream: `f`. Returns `fmt::Result` which indicates whether the
+        // operation succeeded or failed. Note that `write!` uses syntax which
+        // is very similar to `println!`.
+        write!(f, "{} {} {} {}\n{} {} {} {}\n{} {} {} {}\n{} {} {} {}", 
+            self.e[0],self.e[1],self.e[2],self.e[3], 
+            self.e[4],self.e[5],self.e[6],self.e[7], 
+            self.e[8],self.e[9],self.e[10],self.e[11], 
+            self.e[12],self.e[13],self.e[14],self.e[15], 
+        )
+    }
+}
 impl std::ops::Mul<&Vec4> for &Matrix {
     type Output = Vec4;
 
