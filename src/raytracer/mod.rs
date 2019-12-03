@@ -54,9 +54,83 @@ fn intersect(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
 
     // u,v are coords in tri, return if needed
     let t = dot(&v0v2, &qvec) * inv_det;
+    if t<0.0 {
+        return None;
+    }
     Some(t)
 }
 
+fn intersect_late_out(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
+    // Möller-Trumbore algo
+
+    let v0v1 = v1 - v0;
+    let v0v2 = v2 - v0;
+    let pvec = cross(&ray.dir, &v0v2);
+    let det = dot(&v0v1, &pvec);
+    // ray and triangle are parallel if det is close to 0
+    if det.abs() < std::f32::EPSILON {
+        // switch to "if det < std::f32::EPSILON { return None };" for backface culling
+        return None;
+    }
+
+    let inv_det = 1.0 / det;
+
+    let tvec = &ray.pos - v0;
+    let u = dot(&tvec, &pvec) * inv_det;
+
+    let qvec = cross(&tvec, &v0v1);
+    let v = dot(&ray.dir, &qvec) * inv_det;
+
+    // u,v are coords in tri, return if needed
+    let t = dot(&v0v2, &qvec) * inv_det;
+
+
+    // dont merge re-order or break apart these if-clauses - it has a major performance impact!
+    if u < 0.0 || u > 1.0 { return None; }
+    if v < 0.0 || u + v > 1.0 { return None; }
+    if t<0.0 { return None; }
+
+    Some(t)
+}
+
+fn intersect_later_out(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
+    // Möller-Trumbore algo
+
+    let v0v1 = v1 - v0;
+    let v0v2 = v2 - v0;
+    let pvec = cross(&ray.dir, &v0v2);
+    let det = dot(&v0v1, &pvec);
+    let tvec = &ray.pos - v0;
+    let qvec = cross(&tvec, &v0v1);
+
+    let u = dot(&tvec, &pvec);
+    let v = dot(&ray.dir, &qvec);
+    let t = dot(&v0v2, &qvec);
+
+    // ray and triangle are parallel if det is close to 0
+    if det.abs() < std::f32::EPSILON {
+        // switch to "if det < std::f32::EPSILON { return None };" for backface culling
+        return None;
+    }
+
+    let inv_det = 1.0 / det;
+    let u = u * inv_det;
+    let v = v * inv_det;
+    // u,v are coords in tri, return if needed
+    let t = t * inv_det;
+
+    if u < 0.0 || u > 1.0 {
+        return None;
+    }
+    if v < 0.0 || u + v > 1.0 {
+        return None;
+    }
+    if t<0.0 {
+        return None;
+    }
+
+    Some(t)
+}
 
 struct Hit {
     distance: f32,
@@ -91,20 +165,25 @@ impl RayTracer {
         let rays = self.camera.get_rays();
         let mut frame = Vec::with_capacity(self.width*self.height);
 
+        let mut intersect_vals = vec![None;self.scene.transformed_vertices.len()/3];
+
         for ray in rays {
             let mut closest_hit = None;
-            for (i, tri_vertices) in self.scene.transformed_vertices.chunks(3).enumerate() {
-                match (&closest_hit, intersect(ray, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2])) {
+
+            for (i,tri_vertices) in self.scene.transformed_vertices.chunks(3).enumerate() {
+                intersect_vals[i] = intersect_late_out(ray, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]);
+            }
+
+            for (i, intersect_val) in intersect_vals.iter().enumerate() {
+                match (&closest_hit, intersect_val) {
                     (None, None) => (),
                     (Some(_), None) => (),
                     (None, Some(dist)) => {
-                        if dist > 0.0 { 
-                            closest_hit = Some(Hit::new(dist, i*3));
-                        }
+                        closest_hit = Some(Hit::new(*dist, i*3));
                     },
                     (Some(hit), Some(dist)) => {
-                        if dist > 0.0 && dist < hit.distance {
-                            closest_hit = Some(Hit::new(dist, i*3));
+                        if  *dist < hit.distance {
+                            closest_hit = Some(Hit::new(*dist, i*3));
                         }
                     },
                 }
@@ -120,6 +199,37 @@ impl RayTracer {
             };
             frame.push(coloru32);
         }
+
+        // for ray in rays {
+        //     let mut closest_hit = None;
+        //     for (i, tri_vertices) in self.scene.transformed_vertices.chunks(3).enumerate() {
+        //         match (&closest_hit, intersect(ray, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2])) {
+        //             (None, None) => (),
+        //             (Some(_), None) => (),
+        //             (None, Some(dist)) => {
+        //                 if dist > 0.0 { 
+        //                     closest_hit = Some(Hit::new(dist, i*3));
+        //                 }
+        //             },
+        //             (Some(hit), Some(dist)) => {
+        //                 if dist > 0.0 && dist < hit.distance {
+        //                     closest_hit = Some(Hit::new(dist, i*3));
+        //                 }
+        //             },
+        //         }
+        //     }
+
+        //     let coloru32 = match closest_hit {
+        //         Some(ref hit) => {
+        //             let rgb = RayTracer::shade(ray, hit, &self.scene.lights, &self.scene.transformed_vertices);
+        //             let c = RGBA::from_rgb(rgb, 1.0).to_u32();
+        //             c
+        //         },
+        //         None => 0x00_00_00_00u32,
+        //     };
+        //     frame.push(coloru32);
+        // }
+
         frame
     }
 
@@ -144,7 +254,7 @@ impl RayTracer {
             //is light blocked by (other) geometry?
             let mut blocked = false;
             for tri_vertices in vertices.chunks(3) {
-                if let Some(t) = intersect(&ray_to_light, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]) {
+                if let Some(t) = intersect_later_out(&ray_to_light, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]) {
                     if t > 0.0001 && t < 1.0 {
                         blocked = true;
                         break;

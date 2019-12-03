@@ -117,10 +117,8 @@ impl Collada {
                         ));
                     }
 
-                    println!("{}",node.matrix);
                     for vertex in geom_vertices.iter() {
                         let transformed = crate::vecmath::Vec3::from(&node.matrix.transpose() * crate::vecmath::Vec4::from_vec3(vertex));
-                        println!("vertex, transformed {:?} {:?}", vertex, transformed);
                         vertices.push(transformed);
                     }
                     break;
