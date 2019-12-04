@@ -8,7 +8,7 @@ use color::{RGB};
 pub type Pos = Vec3;
 pub type Vertex = Vec3;
 
-
+#[derive(Debug, Clone)]
 pub struct Light {
     pub pos: Pos,
     pub color: RGB,

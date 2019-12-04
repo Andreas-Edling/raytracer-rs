@@ -1,4 +1,4 @@
-
+#[derive(Debug,Copy,Clone)]
 pub struct RGB {
     r: f32,
     g: f32,

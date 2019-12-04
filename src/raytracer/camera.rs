@@ -38,7 +38,7 @@ impl Camera {
             transformed_rays,
             x_angle_radians: 0.0,
             y_angle_radians: 0.0,
-            pos: Vec3::new(-0.5, -0.5, -1.0),
+            pos: Vec3::new(-0.5, -0.5, -10.0),
             orientation_changed: true,
         }
     }

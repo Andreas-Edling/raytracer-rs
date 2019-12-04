@@ -90,11 +90,21 @@ impl Collada {
 
     pub fn to_scene_flatten(&self) -> Result<Scene, String> {
         let mut vertices = vec![];
-                println!("visual_scene!");
+        let mut lights = vec![];
+
         for visual_scene in &self.visual_scenes {
             for node in &visual_scene.nodes {
+                println!("imported node {}",node.id);
+                for light in &self.lights {
+                    if light.id != node.id {
+                        continue;
+                    }
+                    let transformed_light_pos = crate::vecmath::Vec3::from(&node.matrix.transpose() * crate::vecmath::Vec4::from_vec3(&light.light.pos));
+                    lights.push(Light::new(transformed_light_pos, light.light.color));
+                }
+
                 for geometry in &self.geometries {
-                    if geometry.name != node.name {
+                    if geometry.id != node.id {
                         continue;
                     }
 
@@ -127,9 +137,8 @@ impl Collada {
         }
 
         let transformed_vertices = vertices.clone();
-        let mut lights = vec![];
-        lights.push( Light::new(Pos::new(1.0,1.0,1.0), RGB::new(1.0, 1.0, 1.0)));
 
+        println!("lights: {:?}", lights);
         Ok(Scene {
             vertices,
             lights,
@@ -140,29 +149,33 @@ impl Collada {
 
 struct Col_Asset {}
 struct Col_Camera {}
-struct Col_Light {}
+struct Col_Light {
+    id: String,
+    light: Light,
+}
+
 struct Col_Effect {}
 struct Col_Image {}
 struct Col_Material {}
 struct Col_Geometry {
     vertices: Vec<f32>,
     triangles: Vec<u32>,
-    name: String,
+    id: String,
 }
 struct Col_VisualScene {
     nodes: Vec<VisualSceneNode>,
 }
 struct Col_Scene {}
 
-
 struct VisualSceneNode {
-    name: String,
+    id: String,
     matrix: crate::vecmath::Matrix,
 }
+
 impl VisualSceneNode {
-    pub fn new(name: String, matrix: crate::vecmath::Matrix) -> Self {
+    pub fn new(id: String, matrix: crate::vecmath::Matrix) -> Self {
         VisualSceneNode {
-            name,
+            id,
             matrix,
         }
     }
@@ -245,7 +258,6 @@ fn parse_array_u32<'a>() -> impl Parser<'a, Vec<u32>> {
 }
 
 fn convert_geometry(geometry_element: &xml::Element) -> Result<Col_Geometry, String> {
-    let geometry_name = get_attrib_value(geometry_element, "name".to_string())?;
     let id = get_attrib_value(geometry_element, "id".to_string())?;
     let mesh = get_child_by_name(geometry_element, "mesh".to_string())?;
 
@@ -273,7 +285,7 @@ fn convert_geometry(geometry_element: &xml::Element) -> Result<Col_Geometry, Str
         Col_Geometry {
             vertices,
             triangles,
-            name: geometry_name.to_string(),
+            id: id.to_string(),
         }
     )
 }
@@ -283,7 +295,28 @@ fn to_cameras(elem: &xml::Element) -> Result<Vec<Col_Camera>, String> {
 }
 
 fn to_lights(elem: &xml::Element) -> Result<Vec<Col_Light>, String> {
-    Ok(vec![])
+    if let xml::DataOrElements::Elements(light_elements) = &elem.data_or_elements {
+        let mut lights = vec![];
+        for light_elem in light_elements {
+
+            let id = get_attrib_value(light_elem, "id".to_string())?.to_string();
+            let color = {
+                let technique_common_elem = get_child_by_name(light_elem, "technique_common".to_string())?;
+                let point_elem = get_child_by_name(technique_common_elem, "point".to_string())?;
+                let color_elem = get_child_by_name(point_elem, "color".to_string())?;
+                match &color_elem.data_or_elements {
+                    xml::DataOrElements::Data(color_data) =>{ let (_, color_array) = parse_array_f32().parse(color_data)?; Ok(color_array)},
+                    xml::DataOrElements::Elements(_) => Err("cant get color".to_string()),
+                }
+            }?;
+
+            let color = RGB::new(color[0], color[1], color[2]);
+            let pos = Pos::new(0.0,0.0,0.0); //transform with position is found in visualScenes element
+            lights.push(Col_Light{ id, light: Light::new(pos, color)});
+        }
+        return Ok(lights);
+    }
+    Err("cant convert lights".to_string())
 }
 
 fn to_effects(elem: &xml::Element) -> Result<Vec<Col_Effect>, String> {
@@ -311,7 +344,17 @@ fn to_visual_scenes(elem: &xml::Element) -> Result<Vec<Col_VisualScene>, String>
         for scene in scenes {
             if let xml::DataOrElements::Elements(node_elements) = &scene.data_or_elements {
                 for node_elem in node_elements {
-                    let name = get_attrib_value(node_elem, "name".to_string())?.to_string();
+
+                    let name = match (
+                        get_child_by_name(node_elem, "instance_light".to_string()), 
+                        get_child_by_name(node_elem, "instance_geometry".to_string()) 
+                    )
+                    {
+                        (Ok(instance_light), _) => get_attrib_value(instance_light, "url".to_string())?[1..].to_string(), //strip '#' with [1..]
+                        (_, Ok(instance_geom)) => get_attrib_value(instance_geom, "url".to_string())?[1..].to_string(),
+                        (Err(_),Err(_)) => "unsupported node type".to_string(),
+                    };
+
                     let matrix_elem = get_child_by_name(node_elem, "matrix".to_string())?;
                     if let xml::DataOrElements::Data(matrix_data) = &matrix_elem.data_or_elements {
                         let (_,matrix_array) = parse_array_f32().parse(matrix_data)?;
