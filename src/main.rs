@@ -25,7 +25,7 @@ fn main() {
         //let scene = BoxLoader::load().unwrap();
 
         let contents = {
-            let mut file = File::open("c:/source/rust/raytracer/data/4boxes.dae").unwrap();
+            let mut file = File::open("./data/4boxes.dae").unwrap();
             let mut contents = String::new();
             file.read_to_string(&mut contents);
             contents
