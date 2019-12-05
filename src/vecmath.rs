@@ -1,3 +1,19 @@
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Ray {
+    pub pos: Vec3,
+    pub dir: Vec3,
+}
+impl Ray {
+    pub const fn new(pos: Vec3, dir: Vec3) -> Self {
+        Ray {
+            pos,
+            dir,
+        }
+    }
+}
+
+
 #[derive(PartialEq, Debug, Clone)]
 pub struct Vec3 {
     pub x: f32,

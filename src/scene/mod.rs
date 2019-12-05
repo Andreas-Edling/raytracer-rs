@@ -1,20 +1,21 @@
 
 pub mod loaders;
 pub mod color;
+pub mod camera;
 
-use crate::vecmath::*;
+pub use crate::vecmath::*;
 use color::{RGB};
+use camera::Camera;
 
-pub type Pos = Vec3;
 pub type Vertex = Vec3;
 
 #[derive(Debug, Clone)]
 pub struct Light {
-    pub pos: Pos,
+    pub pos: Vec3,
     pub color: RGB,
 }
 impl Light {
-    fn new(pos: Pos, color: RGB) -> Self {
+    fn new(pos: Vec3, color: RGB) -> Self {
         Light { pos, color }
     }
 }
@@ -25,6 +26,7 @@ pub struct Scene {
     pub lights: Vec<Light>,
 
     pub transformed_vertices: Vec<Vertex>,
+    pub cameras: Vec<Camera>
 }
 
 

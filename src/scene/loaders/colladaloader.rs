@@ -6,9 +6,10 @@ use parseval::{
 use crate::scene::{
     Scene, 
     Vertex,
-    Pos,
     color::RGB,
     Light,
+    camera::Camera,
+    Vec3,
 };
 
 
@@ -91,10 +92,20 @@ impl Collada {
     pub fn to_scene_flatten(&self) -> Result<Scene, String> {
         let mut vertices = vec![];
         let mut lights = vec![];
+        let mut cameras = vec![];
 
         for visual_scene in &self.visual_scenes {
             for node in &visual_scene.nodes {
                 println!("imported node {}",node.id);
+                for camera in &self.cameras {
+                    println!(" {} {}", camera.id, node.id);
+                    if camera.id != node.id {
+                        continue;
+                    }
+                    let _camera_pos = crate::vecmath::Vec3::from(&node.matrix.transpose() * crate::vecmath::Vec4::new(0.0, 0.0, 0.0, 1.0));
+                    cameras.push(Camera::new(640, 480, camera.fov));
+                }
+
                 for light in &self.lights {
                     if light.id != node.id {
                         continue;
@@ -138,17 +149,23 @@ impl Collada {
 
         let transformed_vertices = vertices.clone();
 
-        println!("lights: {:?}", lights);
+        println!("cameras: {:?}", cameras);
         Ok(Scene {
             vertices,
             lights,
             transformed_vertices,
+            cameras,
         })
     }
 }
 
 struct Col_Asset {}
-struct Col_Camera {}
+struct Col_Camera {
+    id: String,
+    fov: f32,
+    aspect_ratio: f32,
+    scene_matrix: crate::vecmath::Matrix,
+}
 struct Col_Light {
     id: String,
     light: Light,
@@ -291,7 +308,37 @@ fn convert_geometry(geometry_element: &xml::Element) -> Result<Col_Geometry, Str
 }
 
 fn to_cameras(elem: &xml::Element) -> Result<Vec<Col_Camera>, String> {
-    Ok(vec![])
+    if let xml::DataOrElements::Elements(camera_elements) = &elem.data_or_elements {
+        let mut cameras = vec![];
+        for camera_elem in camera_elements {
+            let id = get_attrib_value(camera_elem, "id".to_string())?.to_string();
+            let optics_elem = get_child_by_name(camera_elem, "optics".to_string())?;
+            let technique_common_elem = get_child_by_name(optics_elem, "technique_common".to_string())?;
+            let perspective_elem = get_child_by_name(technique_common_elem, "perspective".to_string())?;
+            let fov_elem = get_child_by_name(perspective_elem, "xfov".to_string())?;
+            let aspect_ratio_elem = get_child_by_name(perspective_elem, "aspect_ratio".to_string())?;
+            let fov = match &fov_elem.data_or_elements {
+                xml::DataOrElements::Data(fov_data) =>{ let (_,fov) = parse_array_f32().parse(fov_data)?; fov },
+                _ => return Err("cant read fov".to_string()),
+            }[0];
+
+            let aspect_ratio = match &aspect_ratio_elem.data_or_elements {
+                xml::DataOrElements::Data(aspect_ratio_data) =>{ let (_,aspect_ratio) = parse_array_f32().parse(aspect_ratio_data)?; aspect_ratio },
+                _ => return Err("cant read aspect_ratio".to_string()),
+            }[0];
+
+            cameras.push(
+                Col_Camera { 
+                    id, 
+                    fov, 
+                    aspect_ratio, 
+                    scene_matrix: crate::vecmath::Matrix::ident(), // will be gotten from VisualSceneNode
+                }
+            );
+        }
+        return Ok(cameras);
+    }
+    Err("cant convert cameras".to_string())
 }
 
 fn to_lights(elem: &xml::Element) -> Result<Vec<Col_Light>, String> {
@@ -311,7 +358,7 @@ fn to_lights(elem: &xml::Element) -> Result<Vec<Col_Light>, String> {
             }?;
 
             let color = RGB::new(color[0], color[1], color[2]);
-            let pos = Pos::new(0.0,0.0,0.0); //transform with position is found in visualScenes element
+            let pos = Vec3::new(0.0,0.0,0.0); //transform with position is found in visualScenes element
             lights.push(Col_Light{ id, light: Light::new(pos, color)});
         }
         return Ok(lights);
@@ -347,19 +394,25 @@ fn to_visual_scenes(elem: &xml::Element) -> Result<Vec<Col_VisualScene>, String>
 
                     let name = match (
                         get_child_by_name(node_elem, "instance_light".to_string()), 
-                        get_child_by_name(node_elem, "instance_geometry".to_string()) 
+                        get_child_by_name(node_elem, "instance_geometry".to_string()), 
+                        get_child_by_name(node_elem, "instance_camera".to_string()) 
                     )
                     {
-                        (Ok(instance_light), _) => get_attrib_value(instance_light, "url".to_string())?[1..].to_string(), //strip '#' with [1..]
-                        (_, Ok(instance_geom)) => get_attrib_value(instance_geom, "url".to_string())?[1..].to_string(),
-                        (Err(_),Err(_)) => "unsupported node type".to_string(),
+                        (Ok(instance_light), _, _) => get_attrib_value(instance_light, "url".to_string())?[1..].to_string(), //strip '#' with [1..]
+                        (_, Ok(instance_geom), _) => get_attrib_value(instance_geom, "url".to_string())?[1..].to_string(),
+                        (_, _, Ok(instance_cam)) =>  get_attrib_value(instance_cam, "url".to_string())?[1..].to_string(),
+                        _ => "unsupported node type".to_string(),
                     };
+
 
                     let matrix_elem = get_child_by_name(node_elem, "matrix".to_string())?;
                     if let xml::DataOrElements::Data(matrix_data) = &matrix_elem.data_or_elements {
+                        println!("parsing...");
                         let (_,matrix_array) = parse_array_f32().parse(matrix_data)?;
-                        if let Some(matrix) = crate::vecmath::Matrix::from_slice(&matrix_array[..]) {
-                            nodes.push(VisualSceneNode::new(name, matrix));
+                        println!("matrix array {:?}",matrix_array);
+                        match crate::vecmath::Matrix::from_slice(&matrix_array[..]) {
+                            Some(matrix) => nodes.push(VisualSceneNode::new(name, matrix)),
+                            None => return Err("cant create array".to_string()),
                         }
                     }
                 }

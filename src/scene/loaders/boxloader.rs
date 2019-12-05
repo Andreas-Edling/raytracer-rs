@@ -1,12 +1,14 @@
 
 pub use super::SceneLoader;
 
+
 use crate::scene::{
     Scene, 
     Vertex,
-    Pos,
     color::RGB,
     Light,
+    camera::Camera,
+    Vec3,
 };
 
 pub struct BoxLoader {}
@@ -70,10 +72,11 @@ impl SceneLoader for BoxLoader {
         let transformed_vertices = vertices.clone();
 
         let lights = vec![Light::new(
-            Pos::new(RIGHT*3.0, UP*2.0, NEAR*2.0),
+            Vec3::new(RIGHT*3.0, UP*2.0, NEAR*2.0),
             RGB::new(1.0, 1.0, 1.0),
         )];
 
-        Ok( Scene { vertices, lights, transformed_vertices } )
+        let cameras = vec![Camera::new(640,480,60.0)];
+        Ok( Scene { vertices, lights, transformed_vertices, cameras } )
     }
 }

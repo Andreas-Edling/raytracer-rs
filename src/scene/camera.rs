@@ -1,7 +1,7 @@
 
-use super::{Pos, Ray, Vec3};
-use crate::vecmath::*;
+use crate::vecmath::{Ray, Vec3, Matrix, Vec4};
 
+#[derive(Debug,Clone)]
 pub struct Camera {
     rays: Vec<Ray>,
     transformed_rays: Vec<Ray>,
@@ -12,10 +12,10 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(width: usize, height: usize) -> Self {
+    pub fn new(width: usize, height: usize, fov_deg: f32) -> Self {
         let mut rays = Vec::<Ray>::with_capacity(width * height);
 
-        let fov = 60.0f32 *3.1415/180.0;
+        let fov = fov_deg *3.1415/180.0;
         let half_fov = 0.5*fov;
         let max_x = 1.0 * half_fov.tan();
         let max_y = 1.0 * half_fov.tan();
@@ -25,7 +25,7 @@ impl Camera {
             for x in 0..width {
                 let dir_x = -max_x + 2.0*max_x*(x as f32 / width as f32);
                 rays.push(Ray::new(
-                    Pos::new(x as f32 / width as f32, y as f32 / height as f32, 0.0),
+                    Vec3::new(x as f32 / width as f32, y as f32 / height as f32, 0.0),
                     Vec3::new(dir_x, dir_y, 1.0),
                 ));
             }

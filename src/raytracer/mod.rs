@@ -1,29 +1,16 @@
-mod camera;
 
 use crate::vecmath::{cross, dot, Vec3};
 
 use crate::scene::{
     Scene,
-    Pos,
     Vertex,
     color::{RGB, RGBA},
     Light,
+    camera::Camera,
+    Ray,
 };
 
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct Ray {
-    pos: Pos,
-    dir: Vec3,
-}
-impl Ray {
-    const fn new(pos: Pos, dir: Vec3) -> Self {
-        Ray {
-            pos,
-            dir,
-        }
-    }
-}
 
 fn intersect(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
     // Möller-Trumbore algo
@@ -146,17 +133,18 @@ pub struct RayTracer {
     pub scene: Scene,
     width: usize,
     height: usize,
-    pub camera: camera::Camera,
+    pub camera: Camera,
 }
 
 
 impl RayTracer {
     pub fn new(width: usize, height: usize, scene: Scene) -> Self {
+        let camera = scene.cameras[0].clone();
         RayTracer {
             scene,
             width,
             height,
-            camera: camera::Camera::new(width, height),
+            camera,
         }
     }
 

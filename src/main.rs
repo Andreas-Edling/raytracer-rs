@@ -30,7 +30,13 @@ fn main() {
             file.read_to_string(&mut contents);
             contents
         };
-        let scene = ColladaLoader::from_str(&contents).unwrap();
+        let scene = match ColladaLoader::from_str(&contents) {
+            Ok(scene) => scene,
+            Err(e) => {
+                println!("{}",e); 
+                std::process::exit(1); 
+            }
+        };
 
         let mut raytracer = raytracer::RayTracer::new(WIDTH, HEIGHT, scene);
         let mut last_time = std::time::Instant::now();
