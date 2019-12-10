@@ -161,8 +161,22 @@ impl Matrix {
 
         m.e[12] = self.e[3];
         m.e[13] = self.e[7];
-        m.e[14] = self.e[11];
+        m[14] = self.e[11];
         m
+    }
+}
+
+impl std::ops::Index<usize> for Matrix {
+    type Output = f32;
+
+    fn index(&self, i: usize) -> &Self::Output {
+        &self.e[i]
+    }
+}
+
+impl std::ops::IndexMut<usize> for Matrix {
+    fn index_mut(&mut self, i: usize) -> &mut Self::Output {
+        &mut self.e[i]
     }
 }
 

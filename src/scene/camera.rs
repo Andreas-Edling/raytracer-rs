@@ -12,7 +12,26 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(width: usize, height: usize, fov_deg: f32) -> Self {
+    pub fn new(width: usize, height: usize, pos: &Vec3, fov_deg: f32) -> Self {
+        let matrix = Matrix::translate(pos);
+        Self::from_orientation_matrix(width, height, &matrix, fov_deg)
+    }
+
+    // Note - only rotation and position is expected/used in matrix, no perspective!
+    pub fn from_orientation_matrix(width: usize, height: usize, orientation_matrix: &Matrix, fov_deg: f32) -> Self {
+        let rotation_matrix = {
+            let mut rotation_matrix = orientation_matrix.clone();
+            rotation_matrix[3] = 0.0;
+            rotation_matrix[7] = 0.0;
+            rotation_matrix[11] = 0.0;
+            
+            rotation_matrix[12] = 0.0;
+            rotation_matrix[13] = 0.0;
+            rotation_matrix[14] = 0.0;
+            rotation_matrix[15] = 1.0;
+            rotation_matrix
+        };
+
         let mut rays = Vec::<Ray>::with_capacity(width * height);
 
         let fov = fov_deg *3.1415/180.0;
@@ -24,13 +43,16 @@ impl Camera {
             let dir_y = -max_y + 2.0*max_y*(y as f32 / height as f32);
             for x in 0..width {
                 let dir_x = -max_x + 2.0*max_x*(x as f32 / width as f32);
-                rays.push(Ray::new(
-                    Vec3::new(x as f32 / width as f32, y as f32 / height as f32, 0.0),
-                    Vec3::new(dir_x, dir_y, 1.0),
-                ));
+
+                let pos = Vec3::new(x as f32 / width as f32, y as f32 / height as f32, 0.0);
+                let dir = Vec3::new(dir_x, dir_y, 1.0);
+                let pos = orientation_matrix * Vec4::from_vec3(&pos);
+                let mut dir = &rotation_matrix * Vec4::from_vec3(&dir);
+                dir.w = 1.0;
+                rays.push(Ray::new(pos.into(), dir.into()));
             }
         }
-
+        println!("middle ray {:?} {:?}",rays[640*320+160].pos, rays[640*320+160].dir);
         let transformed_rays = rays.clone();
 
         Camera {
@@ -38,7 +60,7 @@ impl Camera {
             transformed_rays,
             x_angle_radians: 0.0,
             y_angle_radians: 0.0,
-            pos: Vec3::new(-0.5, -0.5, -10.0),
+            pos: Vec3::new(0.0, 0.0, 0.0), //pos: Vec3::new(-0.5, -0.5, -10.0),
             orientation_changed: true,
         }
     }
@@ -51,6 +73,14 @@ impl Camera {
     pub fn set_y_angle(&mut self, radians: f32) {
         self.orientation_changed |= self.y_angle_radians != radians;
         self.y_angle_radians = radians;
+    }
+
+    pub fn get_x_angle(&self) -> f32 {
+        self.x_angle_radians
+    }
+
+    pub fn get_y_angle(&self) -> f32 {
+        self.y_angle_radians
     }
 
     pub fn add_x_angle(&mut self, radians: f32) {

@@ -98,19 +98,19 @@ impl Collada {
             for node in &visual_scene.nodes {
                 println!("imported node {}",node.id);
                 for camera in &self.cameras {
-                    println!(" {} {}", camera.id, node.id);
                     if camera.id != node.id {
                         continue;
                     }
-                    let _camera_pos = crate::vecmath::Vec3::from(&node.matrix.transpose() * crate::vecmath::Vec4::new(0.0, 0.0, 0.0, 1.0));
-                    cameras.push(Camera::new(640, 480, camera.fov));
+                    println!("collada cam matrix {:?}", node.matrix);
+                    cameras.push(Camera::from_orientation_matrix(640, 480, &node.matrix.to_vecmath_matrix(), camera.fov));
+                    //cameras.push(Camera::new(640, 480, &Vec3::new(0.0,0.0,-5.0), camera.fov));
                 }
 
                 for light in &self.lights {
                     if light.id != node.id {
                         continue;
                     }
-                    let transformed_light_pos = crate::vecmath::Vec3::from(&node.matrix.transpose() * crate::vecmath::Vec4::from_vec3(&light.light.pos));
+                    let transformed_light_pos = crate::vecmath::Vec3::from(&node.matrix.to_vecmath_matrix() * crate::vecmath::Vec4::from_vec3(&light.light.pos));
                     lights.push(Light::new(transformed_light_pos, light.light.color));
                 }
 
@@ -139,7 +139,7 @@ impl Collada {
                     }
 
                     for vertex in geom_vertices.iter() {
-                        let transformed = crate::vecmath::Vec3::from(&node.matrix.transpose() * crate::vecmath::Vec4::from_vec3(vertex));
+                        let transformed = crate::vecmath::Vec3::from(&node.matrix.to_vecmath_matrix() * crate::vecmath::Vec4::from_vec3(vertex));
                         vertices.push(transformed);
                     }
                     break;
@@ -149,7 +149,6 @@ impl Collada {
 
         let transformed_vertices = vertices.clone();
 
-        println!("cameras: {:?}", cameras);
         Ok(Scene {
             vertices,
             lights,
@@ -184,13 +183,57 @@ struct Col_VisualScene {
 }
 struct Col_Scene {}
 
+
+#[derive(Debug, Clone, PartialEq)]
+struct ColladaMatrix {
+    //Collada uses right handed, with Z up, and column major order (positions in 4th column).
+    elems: [f32;16],
+}
+
+impl ColladaMatrix {
+    pub fn from_slice(elems: &[f32]) -> Option<Self> {
+        if elems.len()<16 {
+            return None;
+        }
+
+        let mut array = [0.0; 16];
+        let elems = &elems[..16];
+        array.copy_from_slice(elems); 
+        Some(ColladaMatrix{ elems: array })
+    }
+
+    pub fn to_vecmath_matrix(&self) -> crate::vecmath::Matrix {
+        //transforms to_left_handed_y_up_row_major
+
+        let row_major = crate::vecmath::Matrix::new(&self.elems).transpose();
+
+        let swap_yx = crate::vecmath::Matrix::new(&[
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 1.0,
+        ]);
+
+        let reflect_z = crate::vecmath::Matrix::new(&[
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, -1.0, 0.0,
+            0.0, 0.0, 0.0, 1.0,
+        ]);
+
+        let result = reflect_z * row_major  * swap_yx;
+        result
+    }
+}
+
+
 struct VisualSceneNode {
     id: String,
-    matrix: crate::vecmath::Matrix,
+    matrix: ColladaMatrix,
 }
 
 impl VisualSceneNode {
-    pub fn new(id: String, matrix: crate::vecmath::Matrix) -> Self {
+    pub fn new(id: String, matrix: ColladaMatrix) -> Self {
         VisualSceneNode {
             id,
             matrix,
@@ -233,16 +276,21 @@ fn get_child_by_name(parent: &xml::Element, name: String) -> Result<&xml::Elemen
 
 
 fn parse_array_f32<'a>() -> impl Parser<'a, Vec<f32>> {
-    let number_str = 
-    one_or_more(
-        pred(
-            any_char,
-            |c| c.is_ascii_digit() || *c == '-' || *c == '.'
-        )
-    );
+    
+    let number =
+        one_or_more(
+            pred(
+                any_char,
+                |c| c.is_ascii_digit() || *c == '-' || *c == '.' || *c == 'e' || *c == 'E'
+            )
+        );
+    
 
     let number = map(
-        left(number_str, whitespace0()),
+        left(
+            number, 
+            whitespace0()
+        ),
         |chars| {
             let string: String = chars.into_iter().collect();
             let num = string.parse::<f32>().unwrap();
@@ -258,7 +306,7 @@ fn parse_array_u32<'a>() -> impl Parser<'a, Vec<u32>> {
     one_or_more(
         pred(
             any_char,
-            |c| c.is_ascii_digit() || *c == '-' || *c == '.'
+            |c| c.is_ascii_digit() || *c == '-'
         )
     );
 
@@ -396,24 +444,18 @@ fn to_visual_scenes(elem: &xml::Element) -> Result<Vec<Col_VisualScene>, String>
                         get_child_by_name(node_elem, "instance_light".to_string()), 
                         get_child_by_name(node_elem, "instance_geometry".to_string()), 
                         get_child_by_name(node_elem, "instance_camera".to_string()) 
-                    )
-                    {
+                    ){
                         (Ok(instance_light), _, _) => get_attrib_value(instance_light, "url".to_string())?[1..].to_string(), //strip '#' with [1..]
                         (_, Ok(instance_geom), _) => get_attrib_value(instance_geom, "url".to_string())?[1..].to_string(),
                         (_, _, Ok(instance_cam)) =>  get_attrib_value(instance_cam, "url".to_string())?[1..].to_string(),
                         _ => "unsupported node type".to_string(),
                     };
 
-
                     let matrix_elem = get_child_by_name(node_elem, "matrix".to_string())?;
                     if let xml::DataOrElements::Data(matrix_data) = &matrix_elem.data_or_elements {
-                        println!("parsing...");
                         let (_,matrix_array) = parse_array_f32().parse(matrix_data)?;
-                        println!("matrix array {:?}",matrix_array);
-                        match crate::vecmath::Matrix::from_slice(&matrix_array[..]) {
-                            Some(matrix) => nodes.push(VisualSceneNode::new(name, matrix)),
-                            None => return Err("cant create array".to_string()),
-                        }
+                        let collada_matrix = ColladaMatrix::from_slice(&matrix_array[..]).ok_or("cant create array".to_string())?;
+                        nodes.push(VisualSceneNode::new(name, collada_matrix));
                     }
                 }
             }
@@ -435,6 +477,43 @@ fn to_visual_scenes(elem: &xml::Element) -> Result<Vec<Col_VisualScene>, String>
 mod tests {
 
     use super::*;
+
+    #[test]
+    fn collada_mat_to_vecmat_translation() {
+        let cm = ColladaMatrix::from_slice(&[
+            0.0, 0.0, 0.0, 10.0,
+            0.0, 0.0, 0.0, 20.0,
+            0.0, 0.0, 0.0, 30.0,
+            0.0, 0.0, 0.0, 1.0,
+        ]).unwrap();
+        let m = cm.to_vecmath_matrix();
+        let expected = crate::vecmath::Matrix::new(&[
+            0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0,
+            10.0, 30.0, -20.0, 1.0,
+        ]);
+        assert_eq!(m, expected);
+    }
+
+    #[test]
+    fn collada_mat_to_vecmat_z_vec() {
+        let cm = ColladaMatrix::from_slice(&[
+            1.0, 0.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0,
+            0.0, 0.0, 1.0, 0.0,
+            0.0, 0.0, 0.0, 1.0,
+        ]).unwrap();
+        let m = cm.to_vecmath_matrix();
+        
+        let z_vec = Vec3::new(0.0,0.0,1.0);
+        let expected = Vec3::new(0.0,1.0,0.0);
+
+        let actual = Vec3::from(m * crate::vecmath::Vec4::from_vec3(&z_vec));
+
+        assert_eq!(actual, expected);
+    }
+
 
     #[test]
     fn test_parse() {

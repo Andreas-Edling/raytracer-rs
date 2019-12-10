@@ -76,7 +76,7 @@ impl SceneLoader for BoxLoader {
             RGB::new(1.0, 1.0, 1.0),
         )];
 
-        let cameras = vec![Camera::new(640,480,60.0)];
+        let cameras = vec![Camera::new(640,480, &Vec3::new(0.0, 0.0, 0.0), 60.0)];
         Ok( Scene { vertices, lights, transformed_vertices, cameras } )
     }
 }

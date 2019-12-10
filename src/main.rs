@@ -73,16 +73,20 @@ fn main() {
                         raytracer.camera.move_rel(0.0, 0.0, -0.1);
                     },
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::A, _, softcanvas::glfw::Action::Press, _) => {
-                        raytracer.camera.add_y_angle(0.01);
+                        raytracer.camera.add_y_angle(0.1);
+                        println!("cam angles: {} {}", raytracer.camera.get_x_angle(), raytracer.camera.get_y_angle());
                     },
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::D, _, softcanvas::glfw::Action::Press, _) => {
-                        raytracer.camera.add_y_angle(-0.01);
+                        raytracer.camera.add_y_angle(-0.1);
+                        println!("cam angles: {} {}", raytracer.camera.get_x_angle(), raytracer.camera.get_y_angle());
                     },
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::W, _, softcanvas::glfw::Action::Press, _) => {
-                        raytracer.camera.add_x_angle(0.01);
+                        raytracer.camera.add_x_angle(0.1);
+                        println!("cam angles: {} {}", raytracer.camera.get_x_angle(), raytracer.camera.get_y_angle());
                     },
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::S, _, softcanvas::glfw::Action::Press, _) => {
-                        raytracer.camera.add_x_angle(-0.01);
+                        raytracer.camera.add_x_angle(-0.1);
+                        println!("cam angles: {} {}", raytracer.camera.get_x_angle(), raytracer.camera.get_y_angle());
                     },
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::I, _, softcanvas::glfw::Action::Press, _) => {
                         cube_rot_x += 10.0*3.141592/180.0;
@@ -109,7 +113,7 @@ fn main() {
             let now = std::time::Instant::now();
             let frame_duration: std::time::Duration = now - last_time;
             last_time = now;
-            println!("fps: {:?}  frame duration: {:?}", 1.0/frame_duration.as_secs_f32(), frame_duration);
+            //println!("fps: {:?}  frame duration: {:?}", 1.0/frame_duration.as_secs_f32(), frame_duration);
         }
     });
 
