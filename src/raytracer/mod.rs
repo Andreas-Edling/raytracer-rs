@@ -1,5 +1,5 @@
 
-use crate::vecmath::{cross, dot, Vec3};
+use crate::vecmath::{cross, dot};
 
 use crate::scene::{
     Scene,
@@ -11,7 +11,7 @@ use crate::scene::{
 };
 
 
-
+#[allow(dead_code)]
 fn intersect(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
     // Möller-Trumbore algo
 
@@ -47,6 +47,7 @@ fn intersect(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
     Some(t)
 }
 
+#[allow(dead_code)]
 fn intersect_late_out(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
     // Möller-Trumbore algo
 
@@ -80,6 +81,7 @@ fn intersect_late_out(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Optio
     Some(t)
 }
 
+#[allow(dead_code)]
 fn intersect_later_out(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
     // Möller-Trumbore algo
 
@@ -187,36 +189,6 @@ impl RayTracer {
             };
             frame.push(coloru32);
         }
-
-        // for ray in rays {
-        //     let mut closest_hit = None;
-        //     for (i, tri_vertices) in self.scene.transformed_vertices.chunks(3).enumerate() {
-        //         match (&closest_hit, intersect(ray, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2])) {
-        //             (None, None) => (),
-        //             (Some(_), None) => (),
-        //             (None, Some(dist)) => {
-        //                 if dist > 0.0 { 
-        //                     closest_hit = Some(Hit::new(dist, i*3));
-        //                 }
-        //             },
-        //             (Some(hit), Some(dist)) => {
-        //                 if dist > 0.0 && dist < hit.distance {
-        //                     closest_hit = Some(Hit::new(dist, i*3));
-        //                 }
-        //             },
-        //         }
-        //     }
-
-        //     let coloru32 = match closest_hit {
-        //         Some(ref hit) => {
-        //             let rgb = RayTracer::shade(ray, hit, &self.scene.lights, &self.scene.transformed_vertices);
-        //             let c = RGBA::from_rgb(rgb, 1.0).to_u32();
-        //             c
-        //         },
-        //         None => 0x00_00_00_00u32,
-        //     };
-        //     frame.push(coloru32);
-        // }
 
         frame
     }

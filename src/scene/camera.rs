@@ -75,14 +75,6 @@ impl Camera {
         self.y_angle_radians = radians;
     }
 
-    pub fn get_x_angle(&self) -> f32 {
-        self.x_angle_radians
-    }
-
-    pub fn get_y_angle(&self) -> f32 {
-        self.y_angle_radians
-    }
-
     pub fn add_x_angle(&mut self, radians: f32) {
         self.orientation_changed |= radians != 0.0;
         self.x_angle_radians += radians;

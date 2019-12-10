@@ -6,39 +6,34 @@ mod vecmath;
 use std::fs::File;
 use std::io::prelude::*;
 
+#[allow(unused_imports)]
 use scene::loaders::{
     SceneLoader,
     boxloader::BoxLoader,
     colladaloader::ColladaLoader,
 };
 
+use std::error::Error;
 
-fn main() {
+fn main() -> Result<(), String> {
     const WIDTH: usize = 640;
     const HEIGHT: usize = 480;
     let mut soft_canvas = softcanvas::SoftCanvas::new(640, 480).expect("cant create canvas");
     let (frame_sender, frame_receiver) = std::sync::mpsc::channel();
     let (event_sender, event_receiver) = std::sync::mpsc::channel();
- 
+
+    let contents = {
+        let mut file = File::open("./data/4boxes.dae").unwrap();
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).map_err(|e| e.description().to_string())?;
+        contents
+    };
+    let scene = ColladaLoader::from_str(&contents)?;
+    let mut raytracer = raytracer::RayTracer::new(WIDTH, HEIGHT, scene);
+
     #[rustfmt::skip]
     std::thread::spawn(move || {
-        //let scene = BoxLoader::load().unwrap();
 
-        let contents = {
-            let mut file = File::open("./data/4boxes.dae").unwrap();
-            let mut contents = String::new();
-            file.read_to_string(&mut contents);
-            contents
-        };
-        let scene = match ColladaLoader::from_str(&contents) {
-            Ok(scene) => scene,
-            Err(e) => {
-                println!("{}",e); 
-                std::process::exit(1); 
-            }
-        };
-
-        let mut raytracer = raytracer::RayTracer::new(WIDTH, HEIGHT, scene);
         let mut last_time = std::time::Instant::now();
         let mut cube_rot_x = 0.0;
         let mut cube_rot_y = 0.0;
@@ -74,19 +69,15 @@ fn main() {
                     },
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::A, _, softcanvas::glfw::Action::Press, _) => {
                         raytracer.camera.add_y_angle(0.1);
-                        println!("cam angles: {} {}", raytracer.camera.get_x_angle(), raytracer.camera.get_y_angle());
                     },
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::D, _, softcanvas::glfw::Action::Press, _) => {
                         raytracer.camera.add_y_angle(-0.1);
-                        println!("cam angles: {} {}", raytracer.camera.get_x_angle(), raytracer.camera.get_y_angle());
                     },
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::W, _, softcanvas::glfw::Action::Press, _) => {
                         raytracer.camera.add_x_angle(0.1);
-                        println!("cam angles: {} {}", raytracer.camera.get_x_angle(), raytracer.camera.get_y_angle());
                     },
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::S, _, softcanvas::glfw::Action::Press, _) => {
                         raytracer.camera.add_x_angle(-0.1);
-                        println!("cam angles: {} {}", raytracer.camera.get_x_angle(), raytracer.camera.get_y_angle());
                     },
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::I, _, softcanvas::glfw::Action::Press, _) => {
                         cube_rot_x += 10.0*3.141592/180.0;
@@ -113,7 +104,7 @@ fn main() {
             let now = std::time::Instant::now();
             let frame_duration: std::time::Duration = now - last_time;
             last_time = now;
-            //println!("fps: {:?}  frame duration: {:?}", 1.0/frame_duration.as_secs_f32(), frame_duration);
+            println!("fps: {:?}  frame duration: {:?}", 1.0/frame_duration.as_secs_f32(), frame_duration);
         }
     });
 
@@ -133,4 +124,5 @@ fn main() {
             _ => { event_sender.send(event).expect("cant send event"); },
         });
     }
+    Ok(())
 }

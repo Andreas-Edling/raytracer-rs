@@ -12,7 +12,8 @@ use crate::scene::{
     Vec3,
 };
 
-
+mod collada_matrix;
+use collada_matrix::ColladaMatrix;
 
 pub use super::SceneLoader;
 
@@ -33,27 +34,15 @@ impl SceneLoader for ColladaLoader {
 
 
 pub struct Collada {
-    cameras: Vec<Col_Camera>,
-    lights: Vec<Col_Light>,
-    effects: Vec<Col_Effect>,
-    materials: Vec<Col_Material>,
-    geometries: Vec<Col_Geometry>,
-    visual_scenes: Vec<Col_VisualScene>
+    cameras: Vec<ColladaCamera>,
+    lights: Vec<ColladaLight>,
+    _effects: Vec<ColladaEffect>,
+    _materials: Vec<ColladaMaterial>,
+    geometries: Vec<ColladaGeometry>,
+    visual_scenes: Vec<ColladaVisualScene>
 }
 impl Collada {
-    pub fn dummy() -> Self {
-        Collada {
-            cameras: Vec::new(),
-            lights: Vec::new(),
-            effects: Vec::new(),
-            materials: Vec::new(),
-            geometries: Vec::new(),
-            visual_scenes: Vec::new(),
-        }
-    }
-
     pub fn parse(input: &str) -> Result<Collada, String> {
-
         let (remaining, _xml_version) = xml::xml_definition_element().parse(input)?;  //<?xml version="1.0" encoding="utf-8"?>
         let (remaining, collada_elem) = xml::opening_element().parse(remaining)?;
         if collada_elem.name != "COLLADA" { return Err("not a collada doc".to_string()); }
@@ -72,8 +61,8 @@ impl Collada {
 
         let cameras = to_cameras(&cameras_element)?;
         let lights = to_lights(&lights_element)?;
-        let effects = to_effects(&effects_element)?;
-        let materials = to_materials(&materials_element)?;
+        let _effects = to_effects(&effects_element)?;
+        let _materials = to_materials(&materials_element)?;
         let geometries = to_geometries(&geometries_element)?;
         let visual_scenes = to_visual_scenes(&visual_scenes_element)?;
 
@@ -81,8 +70,8 @@ impl Collada {
             Collada {
                 cameras,
                 lights,
-                effects,
-                materials,
+                _effects,
+                _materials,
                 geometries,
                 visual_scenes,
             }
@@ -103,7 +92,6 @@ impl Collada {
                     }
                     println!("collada cam matrix {:?}", node.matrix);
                     cameras.push(Camera::from_orientation_matrix(640, 480, &node.matrix.to_vecmath_matrix(), camera.fov));
-                    //cameras.push(Camera::new(640, 480, &Vec3::new(0.0,0.0,-5.0), camera.fov));
                 }
 
                 for light in &self.lights {
@@ -158,73 +146,36 @@ impl Collada {
     }
 }
 
-struct Col_Asset {}
-struct Col_Camera {
+struct _ColladaAsset;
+
+struct ColladaCamera {
     id: String,
     fov: f32,
-    aspect_ratio: f32,
-    scene_matrix: crate::vecmath::Matrix,
+    _aspect_ratio: f32,
+    _scene_matrix: crate::vecmath::Matrix,
 }
-struct Col_Light {
+
+struct ColladaLight {
     id: String,
     light: Light,
 }
 
-struct Col_Effect {}
-struct Col_Image {}
-struct Col_Material {}
-struct Col_Geometry {
+struct ColladaEffect;
+
+struct _ColladaImage;
+
+struct ColladaMaterial;
+
+struct ColladaGeometry {
     vertices: Vec<f32>,
     triangles: Vec<u32>,
     id: String,
 }
-struct Col_VisualScene {
+struct ColladaVisualScene {
     nodes: Vec<VisualSceneNode>,
 }
-struct Col_Scene {}
 
-
-#[derive(Debug, Clone, PartialEq)]
-struct ColladaMatrix {
-    //Collada uses right handed, with Z up, and column major order (positions in 4th column).
-    elems: [f32;16],
-}
-
-impl ColladaMatrix {
-    pub fn from_slice(elems: &[f32]) -> Option<Self> {
-        if elems.len()<16 {
-            return None;
-        }
-
-        let mut array = [0.0; 16];
-        let elems = &elems[..16];
-        array.copy_from_slice(elems); 
-        Some(ColladaMatrix{ elems: array })
-    }
-
-    pub fn to_vecmath_matrix(&self) -> crate::vecmath::Matrix {
-        //transforms to_left_handed_y_up_row_major
-
-        let row_major = crate::vecmath::Matrix::new(&self.elems).transpose();
-
-        let swap_yx = crate::vecmath::Matrix::new(&[
-            1.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 1.0,
-        ]);
-
-        let reflect_z = crate::vecmath::Matrix::new(&[
-            1.0, 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, -1.0, 0.0,
-            0.0, 0.0, 0.0, 1.0,
-        ]);
-
-        let result = reflect_z * row_major  * swap_yx;
-        result
-    }
-}
+struct _ColladaScene;
 
 
 struct VisualSceneNode {
@@ -322,7 +273,7 @@ fn parse_array_u32<'a>() -> impl Parser<'a, Vec<u32>> {
     zero_or_more(number)
 }
 
-fn convert_geometry(geometry_element: &xml::Element) -> Result<Col_Geometry, String> {
+fn convert_geometry(geometry_element: &xml::Element) -> Result<ColladaGeometry, String> {
     let id = get_attrib_value(geometry_element, "id".to_string())?;
     let mesh = get_child_by_name(geometry_element, "mesh".to_string())?;
 
@@ -347,7 +298,7 @@ fn convert_geometry(geometry_element: &xml::Element) -> Result<Col_Geometry, Str
     }
 
     Ok(
-        Col_Geometry {
+        ColladaGeometry {
             vertices,
             triangles,
             id: id.to_string(),
@@ -355,7 +306,7 @@ fn convert_geometry(geometry_element: &xml::Element) -> Result<Col_Geometry, Str
     )
 }
 
-fn to_cameras(elem: &xml::Element) -> Result<Vec<Col_Camera>, String> {
+fn to_cameras(elem: &xml::Element) -> Result<Vec<ColladaCamera>, String> {
     if let xml::DataOrElements::Elements(camera_elements) = &elem.data_or_elements {
         let mut cameras = vec![];
         for camera_elem in camera_elements {
@@ -370,17 +321,17 @@ fn to_cameras(elem: &xml::Element) -> Result<Vec<Col_Camera>, String> {
                 _ => return Err("cant read fov".to_string()),
             }[0];
 
-            let aspect_ratio = match &aspect_ratio_elem.data_or_elements {
+            let _aspect_ratio = match &aspect_ratio_elem.data_or_elements {
                 xml::DataOrElements::Data(aspect_ratio_data) =>{ let (_,aspect_ratio) = parse_array_f32().parse(aspect_ratio_data)?; aspect_ratio },
                 _ => return Err("cant read aspect_ratio".to_string()),
             }[0];
 
             cameras.push(
-                Col_Camera { 
+                ColladaCamera { 
                     id, 
                     fov, 
-                    aspect_ratio, 
-                    scene_matrix: crate::vecmath::Matrix::ident(), // will be gotten from VisualSceneNode
+                    _aspect_ratio, 
+                    _scene_matrix: crate::vecmath::Matrix::ident(), // will be gotten from VisualSceneNode
                 }
             );
         }
@@ -389,7 +340,7 @@ fn to_cameras(elem: &xml::Element) -> Result<Vec<Col_Camera>, String> {
     Err("cant convert cameras".to_string())
 }
 
-fn to_lights(elem: &xml::Element) -> Result<Vec<Col_Light>, String> {
+fn to_lights(elem: &xml::Element) -> Result<Vec<ColladaLight>, String> {
     if let xml::DataOrElements::Elements(light_elements) = &elem.data_or_elements {
         let mut lights = vec![];
         for light_elem in light_elements {
@@ -407,22 +358,22 @@ fn to_lights(elem: &xml::Element) -> Result<Vec<Col_Light>, String> {
 
             let color = RGB::new(color[0], color[1], color[2]);
             let pos = Vec3::new(0.0,0.0,0.0); //transform with position is found in visualScenes element
-            lights.push(Col_Light{ id, light: Light::new(pos, color)});
+            lights.push(ColladaLight{ id, light: Light::new(pos, color)});
         }
         return Ok(lights);
     }
     Err("cant convert lights".to_string())
 }
 
-fn to_effects(elem: &xml::Element) -> Result<Vec<Col_Effect>, String> {
+fn to_effects(_elem: &xml::Element) -> Result<Vec<ColladaEffect>, String> {
     Ok(vec![])
 }
 
-fn to_materials(elem: &xml::Element) -> Result<Vec<Col_Material>, String> {
+fn to_materials(_elem: &xml::Element) -> Result<Vec<ColladaMaterial>, String> {
     Ok(vec![])
 }
 
-fn to_geometries(elem: &xml::Element) -> Result<Vec<Col_Geometry>, String> {
+fn to_geometries(elem: &xml::Element) -> Result<Vec<ColladaGeometry>, String> {
     if let xml::DataOrElements::Elements(geometry_elements) = &elem.data_or_elements {
         let mut geometries = vec![];
         for geometry_elem in geometry_elements {
@@ -433,7 +384,7 @@ fn to_geometries(elem: &xml::Element) -> Result<Vec<Col_Geometry>, String> {
     Err("cant convert geometries".to_string())
 }
 
-fn to_visual_scenes(elem: &xml::Element) -> Result<Vec<Col_VisualScene>, String> {
+fn to_visual_scenes(elem: &xml::Element) -> Result<Vec<ColladaVisualScene>, String> {
     if let xml::DataOrElements::Elements(scenes) = &elem.data_or_elements {
         let mut nodes = vec![];
         for scene in scenes {
@@ -462,7 +413,7 @@ fn to_visual_scenes(elem: &xml::Element) -> Result<Vec<Col_VisualScene>, String>
         }
         return Ok(
             vec![
-                Col_VisualScene {
+                ColladaVisualScene {
                     nodes
                 }
             ]
@@ -473,9 +424,8 @@ fn to_visual_scenes(elem: &xml::Element) -> Result<Vec<Col_VisualScene>, String>
 }
 
 
-
+#[cfg(tests)]
 mod tests {
-
     use super::*;
 
     #[test]
@@ -491,7 +441,7 @@ mod tests {
             0.0, 0.0, 0.0, 0.0,
             0.0, 0.0, 0.0, 0.0,
             0.0, 0.0, 0.0, 0.0,
-            10.0, 30.0, -20.0, 1.0,
+            10.0, 30.0, 20.0, 1.0,
         ]);
         assert_eq!(m, expected);
     }
@@ -507,7 +457,7 @@ mod tests {
         let m = cm.to_vecmath_matrix();
         
         let z_vec = Vec3::new(0.0,0.0,1.0);
-        let expected = Vec3::new(0.0,1.0,0.0);
+        let expected = Vec3::new(0.0,-1.0,0.0);
 
         let actual = Vec3::from(m * crate::vecmath::Vec4::from_vec3(&z_vec));
 

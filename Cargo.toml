@@ -8,5 +8,8 @@ edition = "2018"
 
 [dependencies]
 
-softcanvas = { path = "../../softcanvas"}
-parseval ={ path = "../../parseval"}
+#softcanvas = { path = "../../softcanvas"}
+#parseval ={ path = "../../parseval"}
+
+softcanvas = { git = "https://github.com/Andreas-Edling/softcanvas" }
+parseval = { git = "https://github.com/Andreas-Edling/parseval" }

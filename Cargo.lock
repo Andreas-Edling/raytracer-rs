@@ -100,6 +100,7 @@ dependencies = [
 [[package]]
 name = "parseval"
 version = "0.1.0"
+source = "git+https://github.com/Andreas-Edling/parseval#1802bd83fef4c755ee02c1b253fc81dd62fd2191"
 
 [[package]]
 name = "raw-window-handle"
@@ -113,8 +114,8 @@ dependencies = [
 name = "raytracer-rs"
 version = "0.1.0"
 dependencies = [
- "parseval 0.1.0",
- "softcanvas 0.1.0",
+ "parseval 0.1.0 (git+https://github.com/Andreas-Edling/parseval)",
+ "softcanvas 0.1.0 (git+https://github.com/Andreas-Edling/softcanvas)",
 ]
 
 [[package]]
@@ -133,6 +134,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "softcanvas"
 version = "0.1.0"
+source = "git+https://github.com/Andreas-Edling/softcanvas#ed73b2d949e18f47eb45720e2b0cdbf632c37962"
 dependencies = [
  "gl 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "glfw 0.33.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -157,7 +159,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)" = "14b6052be84e6b71ab17edffc2eeabf5c2c3ae1fdb464aae35ac50c67a44e1f7"
 "checksum malloc_buf 0.0.6 (registry+https://github.com/rust-lang/crates.io-index)" = "62bb907fe88d54d8d9ce32a3cceab4218ed2f6b7d35617cafe9adf84e43919cb"
 "checksum objc 0.2.7 (registry+https://github.com/rust-lang/crates.io-index)" = "915b1b472bc21c53464d6c8461c9d3af805ba1ef837e1cac254428f4a77177b1"
+"checksum parseval 0.1.0 (git+https://github.com/Andreas-Edling/parseval)" = "<none>"
 "checksum raw-window-handle 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "af3d3b2e1053b3ff2171efc29a8bff3439ce6b2ce6a0432695134bc1c7ff8e87"
 "checksum semver 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1d7eb9ef2c18661902cc47e535f9bc51b78acd254da71d375c2f6720d9a40403"
 "checksum semver-parser 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
+"checksum softcanvas 0.1.0 (git+https://github.com/Andreas-Edling/softcanvas)" = "<none>"
 "checksum xml-rs 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "541b12c998c5b56aa2b4e6f18f03664eef9a4fd0a246a55594efae6cc2d964b5"

@@ -11,7 +11,8 @@ use crate::scene::{
     Vec3,
 };
 
-pub struct BoxLoader {}
+#[allow(dead_code)]
+pub struct BoxLoader;
 
 impl SceneLoader for BoxLoader {
     fn from_str(_s: &str) -> Result<Scene, String> {
