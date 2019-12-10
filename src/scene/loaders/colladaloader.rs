@@ -195,24 +195,28 @@ impl VisualSceneNode {
 
 
 fn convert_geometry(geometry_element: &xml::Element) -> Result<ColladaGeometry, String> {
-    let id = geometry_element.get_attrib_value("id".to_string())?;
-    let mesh = geometry_element.get_child_by_name("mesh".to_string())?;
+    let id = geometry_element.get_attrib_value("id")?;
+    let mesh = geometry_element.get_child_by_name("mesh")?;
 
     // get vertex positions
     let mut vertices = vec![];
-    let positions_source = mesh.get_child_by_attrib(("id".to_string(), format!("{}-positions",id)))?;
-    let positions_array = positions_source.get_child_by_attrib(("id".to_string(), format!("{}-positions-array",id)))?;
+    let positions_array = mesh
+        .get_child_by_attrib(("id", format!("{}-positions",id)))?
+        .get_child_by_attrib(("id", format!("{}-positions-array",id)))?;
+
     if let xml::DataOrElements::Data(vertices_str) = &positions_array.data_or_elements {
-        let (_, parsed_vertices) = parse_array_f32().parse(vertices_str)?;
+        let (_, parsed_vertices) = array_f32().parse(vertices_str)?;
         vertices = parsed_vertices;
     }
 
     // get triangle indices
     let mut triangles = vec![];
-    let triangles_element = mesh.get_child_by_name("triangles".to_string())?;
-    let index_array = triangles_element.get_child_by_name("p".to_string())?;
+    let index_array = mesh
+        .get_child_by_name("triangles")?
+        .get_child_by_name("p")?;
+
     if let xml::DataOrElements::Data(triangle_indices_str) = &index_array.data_or_elements {
-        let (_, parsed_index_array) = parse_array_u32().parse(triangle_indices_str)?;
+        let (_, parsed_index_array) = array_u32().parse(triangle_indices_str)?;
         for (pos_index, _normal_index, _texcoord_index) in parsed_index_array.chunks(3).map(|indices| (indices[0], indices[1], indices[2])) {
             triangles.push(pos_index);
         }
@@ -231,19 +235,21 @@ fn to_cameras(elem: &xml::Element) -> Result<Vec<ColladaCamera>, String> {
     if let xml::DataOrElements::Elements(camera_elements) = &elem.data_or_elements {
         let mut cameras = vec![];
         for camera_elem in camera_elements {
-            let id = camera_elem.get_attrib_value("id".to_string())?.to_string();
-            let optics_elem = camera_elem.get_child_by_name("optics".to_string())?;
-            let technique_common_elem = optics_elem.get_child_by_name("technique_common".to_string())?;
-            let perspective_elem = technique_common_elem.get_child_by_name("perspective".to_string())?;
-            let fov_elem = perspective_elem.get_child_by_name("xfov".to_string())?;
-            let aspect_ratio_elem = perspective_elem.get_child_by_name("aspect_ratio".to_string())?;
+            let id = camera_elem.get_attrib_value("id")?.to_string();
+            let perspective_elem = camera_elem
+                .get_child_by_name("optics")?
+                .get_child_by_name("technique_common")?
+                .get_child_by_name("perspective")?;
+
+            let fov_elem = perspective_elem.get_child_by_name("xfov")?;
+            let aspect_ratio_elem = perspective_elem.get_child_by_name("aspect_ratio")?;
             let fov = match &fov_elem.data_or_elements {
-                xml::DataOrElements::Data(fov_data) =>{ let (_,fov) = parse_array_f32().parse(fov_data)?; fov },
+                xml::DataOrElements::Data(fov_data) =>{ let (_,fov) = array_f32().parse(fov_data)?; fov },
                 _ => return Err("cant read fov".to_string()),
             }[0];
 
             let _aspect_ratio = match &aspect_ratio_elem.data_or_elements {
-                xml::DataOrElements::Data(aspect_ratio_data) =>{ let (_,aspect_ratio) = parse_array_f32().parse(aspect_ratio_data)?; aspect_ratio },
+                xml::DataOrElements::Data(aspect_ratio_data) =>{ let (_,aspect_ratio) = array_f32().parse(aspect_ratio_data)?; aspect_ratio },
                 _ => return Err("cant read aspect_ratio".to_string()),
             }[0];
 
@@ -266,13 +272,15 @@ fn to_lights(elem: &xml::Element) -> Result<Vec<ColladaLight>, String> {
         let mut lights = vec![];
         for light_elem in light_elements {
 
-            let id = light_elem.get_attrib_value("id".to_string())?.to_string();
+            let id = light_elem.get_attrib_value("id")?.to_string();
             let color = {
-                let technique_common_elem = light_elem.get_child_by_name("technique_common".to_string())?;
-                let point_elem = technique_common_elem.get_child_by_name("point".to_string())?;
-                let color_elem = point_elem.get_child_by_name("color".to_string())?;
+                let color_elem = light_elem
+                    .get_child_by_name("technique_common")?
+                    .get_child_by_name("point")?
+                    .get_child_by_name("color")?;
+
                 match &color_elem.data_or_elements {
-                    xml::DataOrElements::Data(color_data) =>{ let (_, color_array) = parse_array_f32().parse(color_data)?; Ok(color_array)},
+                    xml::DataOrElements::Data(color_data) =>{ let (_, color_array) = array_f32().parse(color_data)?; Ok(color_array)},
                     xml::DataOrElements::Elements(_) => Err("cant get color".to_string()),
                 }
             }?;
@@ -313,21 +321,21 @@ fn to_visual_scenes(elem: &xml::Element) -> Result<Vec<ColladaVisualScene>, Stri
                 for node_elem in node_elements {
 
                     let name = match (
-                        node_elem.get_child_by_name("instance_light".to_string()), 
-                        node_elem.get_child_by_name("instance_geometry".to_string()), 
-                        node_elem.get_child_by_name("instance_camera".to_string()) 
+                        node_elem.get_child_by_name("instance_light"), 
+                        node_elem.get_child_by_name("instance_geometry"), 
+                        node_elem.get_child_by_name("instance_camera") 
                     ){
-                        (Ok(instance_light), _, _) => instance_light.get_attrib_value("url".to_string())?[1..].to_string(), //strip '#' with [1..]
-                        (_, Ok(instance_geom), _) => instance_geom.get_attrib_value("url".to_string())?[1..].to_string(),
-                        (_, _, Ok(instance_cam)) =>  instance_cam.get_attrib_value("url".to_string())?[1..].to_string(),
-                        _ => "unsupported node type".to_string(),
+                        (Ok(instance_light), _, _) => &instance_light.get_attrib_value("url")?[1..], //strip '#' with [1..]
+                        (_, Ok(instance_geom), _) => &instance_geom.get_attrib_value("url")?[1..],
+                        (_, _, Ok(instance_cam)) =>  &instance_cam.get_attrib_value("url")?[1..],
+                        _ => return Err("unsupported node type".to_string()),
                     };
 
-                    let matrix_elem = node_elem.get_child_by_name("matrix".to_string())?;
+                    let matrix_elem = node_elem.get_child_by_name("matrix")?;
                     if let xml::DataOrElements::Data(matrix_data) = &matrix_elem.data_or_elements {
-                        let (_,matrix_array) = parse_array_f32().parse(matrix_data)?;
+                        let (_,matrix_array) = array_f32().parse(matrix_data)?;
                         let collada_matrix = ColladaMatrix::from_slice(&matrix_array[..]).ok_or("cant create array".to_string())?;
-                        nodes.push(VisualSceneNode::new(name, collada_matrix));
+                        nodes.push(VisualSceneNode::new(name.to_string(), collada_matrix));
                     }
                 }
             }
