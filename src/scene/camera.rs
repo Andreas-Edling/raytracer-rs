@@ -92,7 +92,7 @@ impl Camera {
         self.pos.z += z;
     }
 
-    pub fn get_rays<'a>(&'a mut self) -> &'a [Ray] {
+    pub fn get_rays(& mut self) -> &[Ray] {
         if self.orientation_changed {
             let matrix = Matrix::rot_x(self.x_angle_radians);
             let matrix = matrix * Matrix::rot_y(self.y_angle_radians);

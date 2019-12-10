@@ -1,6 +1,6 @@
 use parseval::{
     xml,
-    parsers::*
+    parsers::*,
 };
 
 use crate::scene::{
@@ -192,95 +192,16 @@ impl VisualSceneNode {
     }
 }
 
-fn get_attrib_value<'a>(element: &'a xml::Element, expected_attrib_name: String) -> Result<&'a str, String> {
-    for (attrib_name, attrib_val) in &element.attributes {
-        if expected_attrib_name == *attrib_name {
-            return Ok(attrib_val);
-        }
-    }
-    Err(format!("cant find attrib with name {}",expected_attrib_name))
-}
 
-fn get_child_by_attrib(parent:&xml::Element, attrib: (String,String)) -> Result<&xml::Element, String> {
-    if let xml::DataOrElements::Elements(children) = &parent.data_or_elements {
-        for element in children {
-            for (attrib_name, attrib_val) in &element.attributes {
-                if attrib.0 == *attrib_name && attrib.1 == *attrib_val {
-                    return Ok(element);
-                }
-            }
-        }
-    }
-    Err(format!("cant find element by attrib ({}, {})", attrib.0, attrib.1))
-}
-
-fn get_child_by_name(parent: &xml::Element, name: String) -> Result<&xml::Element, String> {
-    if let xml::DataOrElements::Elements(children) = &parent.data_or_elements {
-        for child in children {
-            if child.name == name {
-                return Ok(child);
-            }
-        }
-    }
-    Err(format!("cant find child by name: {}", name))
-}
-
-
-fn parse_array_f32<'a>() -> impl Parser<'a, Vec<f32>> {
-    
-    let number =
-        one_or_more(
-            pred(
-                any_char,
-                |c| c.is_ascii_digit() || *c == '-' || *c == '.' || *c == 'e' || *c == 'E'
-            )
-        );
-    
-
-    let number = map(
-        left(
-            number, 
-            whitespace0()
-        ),
-        |chars| {
-            let string: String = chars.into_iter().collect();
-            let num = string.parse::<f32>().unwrap();
-            num
-        }
-    );
-
-    zero_or_more(number)
-}
-
-fn parse_array_u32<'a>() -> impl Parser<'a, Vec<u32>> {
-    let number_str = 
-    one_or_more(
-        pred(
-            any_char,
-            |c| c.is_ascii_digit() || *c == '-'
-        )
-    );
-
-    let number = map(
-        left(number_str, whitespace0()),
-        |chars| {
-            let string: String = chars.into_iter().collect();
-            let num = string.parse::<u32>().unwrap();
-            num
-        }
-    );
-
-    zero_or_more(number)
-}
 
 fn convert_geometry(geometry_element: &xml::Element) -> Result<ColladaGeometry, String> {
-    let id = get_attrib_value(geometry_element, "id".to_string())?;
-    let mesh = get_child_by_name(geometry_element, "mesh".to_string())?;
+    let id = geometry_element.get_attrib_value("id".to_string())?;
+    let mesh = geometry_element.get_child_by_name("mesh".to_string())?;
 
     // get vertex positions
     let mut vertices = vec![];
-    let positions_source = get_child_by_attrib(mesh, ("id".to_string(),format!("{}-positions",id)))?;
-    let positions_array = get_child_by_attrib(positions_source, ("id".to_string(), format!("{}-positions-array",id)))?;
+    let positions_source = mesh.get_child_by_attrib(("id".to_string(), format!("{}-positions",id)))?;
+    let positions_array = positions_source.get_child_by_attrib(("id".to_string(), format!("{}-positions-array",id)))?;
     if let xml::DataOrElements::Data(vertices_str) = &positions_array.data_or_elements {
         let (_, parsed_vertices) = parse_array_f32().parse(vertices_str)?;
         vertices = parsed_vertices;
@@ -288,8 +209,8 @@ fn convert_geometry(geometry_element: &xml::Element) -> Result<ColladaGeometry, 
 
     // get triangle indices
     let mut triangles = vec![];
-    let triangles_element = get_child_by_name(mesh, "triangles".to_string())?;
-    let index_array = get_child_by_name(triangles_element, "p".to_string())?;
+    let triangles_element = mesh.get_child_by_name("triangles".to_string())?;
+    let index_array = triangles_element.get_child_by_name("p".to_string())?;
     if let xml::DataOrElements::Data(triangle_indices_str) = &index_array.data_or_elements {
         let (_, parsed_index_array) = parse_array_u32().parse(triangle_indices_str)?;
         for (pos_index, _normal_index, _texcoord_index) in parsed_index_array.chunks(3).map(|indices| (indices[0], indices[1], indices[2])) {
@@ -310,12 +231,12 @@ fn to_cameras(elem: &xml::Element) -> Result<Vec<ColladaCamera>, String> {
     if let xml::DataOrElements::Elements(camera_elements) = &elem.data_or_elements {
         let mut cameras = vec![];
         for camera_elem in camera_elements {
-            let id = get_attrib_value(camera_elem, "id".to_string())?.to_string();
-            let optics_elem = get_child_by_name(camera_elem, "optics".to_string())?;
-            let technique_common_elem = get_child_by_name(optics_elem, "technique_common".to_string())?;
-            let perspective_elem = get_child_by_name(technique_common_elem, "perspective".to_string())?;
-            let fov_elem = get_child_by_name(perspective_elem, "xfov".to_string())?;
-            let aspect_ratio_elem = get_child_by_name(perspective_elem, "aspect_ratio".to_string())?;
+            let id = camera_elem.get_attrib_value("id".to_string())?.to_string();
+            let optics_elem = camera_elem.get_child_by_name("optics".to_string())?;
+            let technique_common_elem = optics_elem.get_child_by_name("technique_common".to_string())?;
+            let perspective_elem = technique_common_elem.get_child_by_name("perspective".to_string())?;
+            let fov_elem = perspective_elem.get_child_by_name("xfov".to_string())?;
+            let aspect_ratio_elem = perspective_elem.get_child_by_name("aspect_ratio".to_string())?;
             let fov = match &fov_elem.data_or_elements {
                 xml::DataOrElements::Data(fov_data) =>{ let (_,fov) = parse_array_f32().parse(fov_data)?; fov },
                 _ => return Err("cant read fov".to_string()),
@@ -345,11 +266,11 @@ fn to_lights(elem: &xml::Element) -> Result<Vec<ColladaLight>, String> {
         let mut lights = vec![];
         for light_elem in light_elements {
 
-            let id = get_attrib_value(light_elem, "id".to_string())?.to_string();
+            let id = light_elem.get_attrib_value("id".to_string())?.to_string();
             let color = {
-                let technique_common_elem = get_child_by_name(light_elem, "technique_common".to_string())?;
-                let point_elem = get_child_by_name(technique_common_elem, "point".to_string())?;
-                let color_elem = get_child_by_name(point_elem, "color".to_string())?;
+                let technique_common_elem = light_elem.get_child_by_name("technique_common".to_string())?;
+                let point_elem = technique_common_elem.get_child_by_name("point".to_string())?;
+                let color_elem = point_elem.get_child_by_name("color".to_string())?;
                 match &color_elem.data_or_elements {
                     xml::DataOrElements::Data(color_data) =>{ let (_, color_array) = parse_array_f32().parse(color_data)?; Ok(color_array)},
                     xml::DataOrElements::Elements(_) => Err("cant get color".to_string()),
@@ -392,17 +313,17 @@ fn to_visual_scenes(elem: &xml::Element) -> Result<Vec<ColladaVisualScene>, Stri
                 for node_elem in node_elements {
 
                     let name = match (
-                        get_child_by_name(node_elem, "instance_light".to_string()), 
-                        get_child_by_name(node_elem, "instance_geometry".to_string()), 
-                        get_child_by_name(node_elem, "instance_camera".to_string()) 
+                        node_elem.get_child_by_name("instance_light".to_string()), 
+                        node_elem.get_child_by_name("instance_geometry".to_string()), 
+                        node_elem.get_child_by_name("instance_camera".to_string()) 
                     ){
-                        (Ok(instance_light), _, _) => get_attrib_value(instance_light, "url".to_string())?[1..].to_string(), //strip '#' with [1..]
-                        (_, Ok(instance_geom), _) => get_attrib_value(instance_geom, "url".to_string())?[1..].to_string(),
-                        (_, _, Ok(instance_cam)) =>  get_attrib_value(instance_cam, "url".to_string())?[1..].to_string(),
+                        (Ok(instance_light), _, _) => instance_light.get_attrib_value("url".to_string())?[1..].to_string(), //strip '#' with [1..]
+                        (_, Ok(instance_geom), _) => instance_geom.get_attrib_value("url".to_string())?[1..].to_string(),
+                        (_, _, Ok(instance_cam)) =>  instance_cam.get_attrib_value("url".to_string())?[1..].to_string(),
                         _ => "unsupported node type".to_string(),
                     };
 
-                    let matrix_elem = get_child_by_name(node_elem, "matrix".to_string())?;
+                    let matrix_elem = node_elem.get_child_by_name("matrix".to_string())?;
                     if let xml::DataOrElements::Data(matrix_data) = &matrix_elem.data_or_elements {
                         let (_,matrix_array) = parse_array_f32().parse(matrix_data)?;
                         let collada_matrix = ColladaMatrix::from_slice(&matrix_array[..]).ok_or("cant create array".to_string())?;
