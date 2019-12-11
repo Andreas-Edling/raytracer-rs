@@ -20,7 +20,7 @@ impl Camera {
     // Note - only rotation and position is expected/used in matrix, no perspective!
     pub fn from_orientation_matrix(width: usize, height: usize, orientation_matrix: &Matrix, fov_deg: f32) -> Self {
         let rotation_matrix = {
-            let mut rotation_matrix = orientation_matrix.clone();
+            let mut rotation_matrix = *orientation_matrix;
             rotation_matrix[3] = 0.0;
             rotation_matrix[7] = 0.0;
             rotation_matrix[11] = 0.0;
@@ -34,7 +34,7 @@ impl Camera {
 
         let mut rays = Vec::<Ray>::with_capacity(width * height);
 
-        let fov = fov_deg *3.1415/180.0;
+        let fov = fov_deg * std::f32::consts::PI / 180.0;
         let half_fov = 0.5*fov;
         let max_x = 1.0 * half_fov.tan();
         let max_y = 1.0 * half_fov.tan();
@@ -47,7 +47,7 @@ impl Camera {
                 let pos = Vec3::new(x as f32 / width as f32, y as f32 / height as f32, 0.0);
                 let dir = Vec3::new(dir_x, dir_y, 1.0);
                 let pos = orientation_matrix * Vec4::from_vec3(&pos);
-                let mut dir = &rotation_matrix * Vec4::from_vec3(&dir);
+                let mut dir = rotation_matrix * Vec4::from_vec3(&dir);
                 dir.w = 1.0;
                 rays.push(Ray::new(pos.into(), dir.into()));
             }
@@ -66,12 +66,12 @@ impl Camera {
     }
 
     pub fn set_x_angle(&mut self, radians: f32) {
-        self.orientation_changed |= self.x_angle_radians != radians;
+        self.orientation_changed |= (self.y_angle_radians - radians).abs() > std::f32::EPSILON;
         self.x_angle_radians = radians;
     }
 
     pub fn set_y_angle(&mut self, radians: f32) {
-        self.orientation_changed |= self.y_angle_radians != radians;
+        self.orientation_changed |= (self.y_angle_radians - radians).abs() > std::f32::EPSILON;
         self.y_angle_radians = radians;
     }
 
@@ -96,11 +96,11 @@ impl Camera {
         if self.orientation_changed {
             let matrix = Matrix::rot_x(self.x_angle_radians);
             let matrix = matrix * Matrix::rot_y(self.y_angle_radians);
-            let pos_matrix = &matrix * Matrix::translate(&self.pos);
+            let pos_matrix = matrix * Matrix::translate(&self.pos);
 
             for (i, ray) in self.rays.iter().enumerate() {
-                let pos = &pos_matrix * Vec4::from_vec3(&ray.pos);
-                let mut dir = &matrix * Vec4::from_vec3(&ray.dir);
+                let pos = pos_matrix * Vec4::from_vec3(&ray.pos);
+                let mut dir = matrix * Vec4::from_vec3(&ray.dir);
                 dir.w = 1.0;
                 self.transformed_rays[i] = Ray::new(pos.into(), dir.into());
             }

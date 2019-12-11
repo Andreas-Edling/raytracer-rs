@@ -34,7 +34,7 @@ pub struct ColladaLoader {}
 
 impl SceneLoader for ColladaLoader {
     fn from_str(doc: &str) -> Result<Scene, SceneLoadError> {
-        let collada = Collada::parse(doc).map_err(|collada_err| SceneLoadError::ColladaLoader(collada_err))?;
+        let collada = Collada::parse(doc).map_err(SceneLoadError::ColladaLoader)?;
         let scene = collada.to_scene_flatten();
         Ok(scene)
     }
@@ -56,43 +56,43 @@ pub struct Collada {
 impl Collada {
     pub fn parse(input: &str) -> Result<Collada, ColladaError> {
         let (remaining, _xml_version) = xml::xml_definition_element()
-            .parse(input).map_err(|e| ColladaError::XmlDefinition(e) )?;  //<?xml version="1.0" encoding="utf-8"?>
+            .parse(input).map_err(ColladaError::XmlDefinition)?;  //<?xml version="1.0" encoding="utf-8"?>
 
         let (remaining, collada_elem) = xml::opening_element()
-            .parse(remaining).map_err(|e| ColladaError::ColladaElement(e) )?;
+            .parse(remaining).map_err(ColladaError::ColladaElement)?;
         if collada_elem.name != "COLLADA" { return Err(ColladaError::NotColladaDoc); }
         
         let (remaining, _asset_element) = xml::element_with_name("asset".to_string())
-            .parse(remaining).map_err(|e| ColladaError::AssetParsing(e) )?;
+            .parse(remaining).map_err(ColladaError::AssetParsing)?;
 
         let (remaining, cameras_element) = xml::element_with_name("library_cameras".to_string())
-            .parse(remaining).map_err(|e| ColladaError::LibraryCamerasParsing(e) )?;
+            .parse(remaining).map_err(ColladaError::LibraryCamerasParsing)?;
 
         let (remaining, lights_element) = xml::element_with_name("library_lights".to_string())
-            .parse(remaining).map_err(|e| ColladaError::LibraryLightsParsing(e) )?;
+            .parse(remaining).map_err(ColladaError::LibraryLightsParsing)?;
 
         let (remaining, effects_element) = xml::element_with_name("library_effects".to_string())
-            .parse(remaining).map_err(|e| ColladaError::LibraryEffectsParsing(e) )?;
+            .parse(remaining).map_err(ColladaError::LibraryEffectsParsing)?;
 
         let (remaining, _images_element) = xml::element_with_name("library_images".to_string())
-            .parse(remaining).map_err(|e| ColladaError::LibraryImagesParsing(e) )?;
+            .parse(remaining).map_err(ColladaError::LibraryImagesParsing)?;
 
         let (remaining, materials_element) = xml::element_with_name("library_materials".to_string())
-            .parse(remaining).map_err(|e| ColladaError::LibraryMaterialsParsing(e) )?;
+            .parse(remaining).map_err(ColladaError::LibraryMaterialsParsing)?;
         
         let (remaining, geometries_element) = xml::element_with_name("library_geometries".to_string())
-            .parse(remaining).map_err(|e| ColladaError::LibraryGeometriesParsing(e) )?;
+            .parse(remaining).map_err(ColladaError::LibraryGeometriesParsing)?;
         
         let (remaining, visual_scenes_element) = xml::element_with_name("library_visual_scenes".to_string())
-            .parse(remaining).map_err(|e| ColladaError::LibraryVisualScenesParsing(e) )?;
+            .parse(remaining).map_err(ColladaError::LibraryVisualScenesParsing)?;
         
         let (remaining, _scene_element) = xml::element_with_name("scene".to_string())
-            .parse(remaining).map_err(|e| ColladaError::LibrarySceneParsing(e) )?;
+            .parse(remaining).map_err(ColladaError::LibrarySceneParsing)?;
         
         let (remaining, _) = xml::closing_element("COLLADA".to_string())
-            .parse(remaining).map_err(|e| ColladaError::ColladaElement(e) )?;
+            .parse(remaining).map_err(ColladaError::ColladaElement)?;
 
-        if remaining.len() != 0 {
+        if !remaining.is_empty() {
             return Err(ColladaError::RemainingData(remaining.to_string()));
         }
 
@@ -134,7 +134,7 @@ impl Collada {
                     if light.id != node.id {
                         continue;
                     }
-                    let transformed_light_pos = crate::vecmath::Vec3::from(&node.matrix.to_vecmath_matrix() * crate::vecmath::Vec4::from_vec3(&light.light.pos));
+                    let transformed_light_pos = crate::vecmath::Vec3::from(node.matrix.to_vecmath_matrix() * crate::vecmath::Vec4::from_vec3(&light.light.pos));
                     lights.push(Light::new(transformed_light_pos, light.light.color));
                 }
 
@@ -163,7 +163,7 @@ impl Collada {
                     }
 
                     for vertex in geom_vertices.iter() {
-                        let transformed = crate::vecmath::Vec3::from(&node.matrix.to_vecmath_matrix() * crate::vecmath::Vec4::from_vec3(vertex));
+                        let transformed = crate::vecmath::Vec3::from(node.matrix.to_vecmath_matrix() * crate::vecmath::Vec4::from_vec3(vertex));
                         vertices.push(transformed);
                     }
                     break;
@@ -274,7 +274,7 @@ fn to_visual_scenes(elem: &xml::Element) -> Result<Vec<ColladaVisualScene>, Coll
                     let matrix_elem = node_elem.get_child_by_name("matrix")?;
                     if let xml::DataOrElements::Data(matrix_data) = &matrix_elem.data_or_elements {
                         let (_,matrix_array) = array_f32().parse(matrix_data)?;
-                        let collada_matrix = ColladaMatrix::from_slice(&matrix_array[..]).ok_or(ColladaError::VisualSceneConversion("cant create array".to_string()))?;
+                        let collada_matrix = ColladaMatrix::from_slice(&matrix_array[..]).ok_or_else(|| ColladaError::VisualSceneConversion("cant create array".to_string()))?;
                         nodes.push(ColladaVisualSceneNode::new(name.to_string(), collada_matrix));
                     }
                 }

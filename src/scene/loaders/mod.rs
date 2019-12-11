@@ -10,5 +10,5 @@ pub enum SceneLoadError {
 }
 pub trait SceneLoader {
     fn from_str(input: &str) -> Result<Scene, SceneLoadError>;
-    fn load<'a>() -> Result<Scene, SceneLoadError>;
+    fn load() -> Result<Scene, SceneLoadError>;
 }

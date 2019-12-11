@@ -182,8 +182,7 @@ impl RayTracer {
             let coloru32 = match closest_hit {
                 Some(ref hit) => {
                     let rgb = RayTracer::shade(ray, hit, &self.scene.lights, &self.scene.transformed_vertices);
-                    let c = RGBA::from_rgb(rgb, 1.0).to_u32();
-                    c
+                    RGBA::from_rgb(rgb, 1.0).to_u32()
                 },
                 None => 0x00_00_00_00u32,
             };
@@ -233,7 +232,7 @@ impl RayTracer {
                     const SHININESS: f32 = 32.0;
                     let view_ray = -ray.dir.normalized(); 
                     let reflected_light = 2.0*dot_light_normal*normal - ray_to_light.dir.normalized();
-                    accum_color += (DIFFUSE*dot_light_normal + SPECULAR*dot(&view_ray, &reflected_light).powf(SHININESS)) * &light.color;
+                    accum_color += (DIFFUSE*dot_light_normal + SPECULAR*dot(&view_ray, &reflected_light).powf(SHININESS)) * light.color;
                 }
             }
         }

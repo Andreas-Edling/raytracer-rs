@@ -13,6 +13,7 @@ use scene::loaders::{
     colladaloader::ColladaLoader,
 };
 
+
 fn main() -> Result<(), String>{
     const WIDTH: usize = 640;
     const HEIGHT: usize = 480;
@@ -79,16 +80,16 @@ fn main() -> Result<(), String>{
                         raytracer.camera.add_x_angle(-0.1);
                     },
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::I, _, softcanvas::glfw::Action::Press, _) => {
-                        cube_rot_x += 10.0*3.141592/180.0;
+                        cube_rot_x += 10.0*std::f32::consts::PI/180.0;
                     },
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::K, _, softcanvas::glfw::Action::Press, _) => {
-                        cube_rot_x -= 10.0*3.141592/180.0;
+                        cube_rot_x -= 10.0*std::f32::consts::PI/180.0;
                     },
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::L, _, softcanvas::glfw::Action::Press, _) => {
-                        cube_rot_y += 10.0*3.141592/180.0;
+                        cube_rot_y += 10.0*std::f32::consts::PI/180.0;
                     },
                     softcanvas::glfw::WindowEvent::Key(softcanvas::glfw::Key::J, _, softcanvas::glfw::Action::Press, _) => {
-                        cube_rot_y -= 10.0*3.141592/180.0;
+                        cube_rot_y -= 10.0*std::f32::consts::PI/180.0;
                     },
                     softcanvas::glfw::WindowEvent::CursorPos(x,y) => {
                         let nx = x as f32 / WIDTH as f32;

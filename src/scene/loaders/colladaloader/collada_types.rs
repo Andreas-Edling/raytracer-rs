@@ -79,8 +79,7 @@ impl ColladaMatrix {
             0.0, 0.0, 0.0, 1.0,
         ]);
 
-        let result = reflect_z * row_major  * swap_yx;
-        result
+        reflect_z * row_major  * swap_yx
     }
 }
 

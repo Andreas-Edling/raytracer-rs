@@ -181,12 +181,7 @@ impl std::ops::IndexMut<usize> for Matrix {
 }
 
 impl std::fmt::Display for Matrix {
-    // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        // Write strictly the first element into the supplied output
-        // stream: `f`. Returns `fmt::Result` which indicates whether the
-        // operation succeeded or failed. Note that `write!` uses syntax which
-        // is very similar to `println!`.
         write!(f, "{} {} {} {}\n{} {} {} {}\n{} {} {} {}\n{} {} {} {}", 
             self.e[0],self.e[1],self.e[2],self.e[3], 
             self.e[4],self.e[5],self.e[6],self.e[7], 
@@ -198,6 +193,7 @@ impl std::fmt::Display for Matrix {
 impl std::ops::Mul<&Vec4> for &Matrix {
     type Output = Vec4;
 
+    #[allow(clippy::many_single_char_names)]
     fn mul(self, v: &Vec4) -> Self::Output {
         let x = v.x * self.e[0] + v.y * self.e[4] + v.z * self.e[8] + v.w * self.e[12];
         let y = v.x * self.e[1] + v.y * self.e[5] + v.z * self.e[9] + v.w * self.e[13];
@@ -209,6 +205,7 @@ impl std::ops::Mul<&Vec4> for &Matrix {
 impl std::ops::Mul<Vec4> for Matrix {
     type Output = Vec4;
 
+    #[allow(clippy::op_ref)]
     fn mul(self, v: Vec4) -> Self::Output {
         &self * &v
     }
@@ -216,6 +213,7 @@ impl std::ops::Mul<Vec4> for Matrix {
 impl std::ops::Mul<Vec4> for &Matrix {
     type Output = Vec4;
 
+    #[allow(clippy::op_ref)]
     fn mul(self, v: Vec4) -> Self::Output {
         self * &v
     }
@@ -223,6 +221,7 @@ impl std::ops::Mul<Vec4> for &Matrix {
 impl std::ops::Mul<&Vec4> for Matrix {
     type Output = Vec4;
 
+    #[allow(clippy::op_ref)]
     fn mul(self, v: &Vec4) -> Self::Output {
         &self * v
     }
@@ -231,6 +230,7 @@ impl std::ops::Mul<&Vec4> for Matrix {
 impl std::ops::Mul<&Matrix> for &Matrix {
     type Output = Matrix;
 
+    #[allow(clippy::many_single_char_names)]
     fn mul(self, rhs: &Matrix) -> Self::Output {
         let a = self.e[0] * rhs.e[0]
             + self.e[1] * rhs.e[4]
@@ -308,6 +308,7 @@ impl std::ops::Mul<&Matrix> for &Matrix {
 impl std::ops::Mul<Matrix> for &Matrix {
     type Output = Matrix;
 
+    #[allow(clippy::op_ref)]
     fn mul(self, rhs: Matrix) -> Self::Output {
         self * &rhs
     }
@@ -316,6 +317,7 @@ impl std::ops::Mul<Matrix> for &Matrix {
 impl std::ops::Mul<&Matrix> for Matrix {
     type Output = Matrix;
 
+    #[allow(clippy::op_ref)]
     fn mul(self, rhs: &Matrix) -> Self::Output {
         &self * rhs
     }
@@ -324,6 +326,7 @@ impl std::ops::Mul<&Matrix> for Matrix {
 impl std::ops::Mul<Matrix> for Matrix {
     type Output = Matrix;
 
+    #[allow(clippy::op_ref)]
     fn mul(self, rhs: Matrix) -> Self::Output {
         &self * &rhs
     }
