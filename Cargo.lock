@@ -100,7 +100,7 @@ dependencies = [
 [[package]]
 name = "parseval"
 version = "0.1.0"
-source = "git+https://github.com/Andreas-Edling/parseval#6326e27bb857da63193f24db88ecb0cd2bc95ed0"
+source = "git+https://github.com/Andreas-Edling/parseval#3647320d7b5e8ffcce43dce46197ff9ac729ae8f"
 
 [[package]]
 name = "raw-window-handle"

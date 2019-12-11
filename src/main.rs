@@ -13,9 +13,7 @@ use scene::loaders::{
     colladaloader::ColladaLoader,
 };
 
-use std::error::Error;
-
-fn main() -> Result<(), String> {
+fn main() -> Result<(), String>{
     const WIDTH: usize = 640;
     const HEIGHT: usize = 480;
     let mut soft_canvas = softcanvas::SoftCanvas::new(640, 480).expect("cant create canvas");
@@ -23,12 +21,13 @@ fn main() -> Result<(), String> {
     let (event_sender, event_receiver) = std::sync::mpsc::channel();
 
     let contents = {
-        let mut file = File::open("./data/4boxes.dae").unwrap();
+        let mut file = File::open("./data/4boxes.dae").map_err(|e| e.to_string())?;
+        
         let mut contents = String::new();
-        file.read_to_string(&mut contents).map_err(|e| e.description().to_string())?;
+        file.read_to_string(&mut contents).map_err(|e| e.to_string())?;
         contents
     };
-    let scene = ColladaLoader::from_str(&contents)?;
+    let scene = ColladaLoader::from_str(&contents).map_err(|e| format!("{:?}",e))?;
     let mut raytracer = raytracer::RayTracer::new(WIDTH, HEIGHT, scene);
 
     #[rustfmt::skip]

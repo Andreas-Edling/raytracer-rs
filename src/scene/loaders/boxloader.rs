@@ -1,6 +1,5 @@
 
-pub use super::SceneLoader;
-
+pub use super::{SceneLoader, SceneLoadError};
 
 use crate::scene::{
     Scene, 
@@ -15,11 +14,11 @@ use crate::scene::{
 pub struct BoxLoader;
 
 impl SceneLoader for BoxLoader {
-    fn from_str(_s: &str) -> Result<Scene, String> {
-        Err("not implemented for BoxLoader".to_string())
+    fn from_str(_s: &str) -> Result<Scene, SceneLoadError> {
+        Err(SceneLoadError::BoxLoader("not implemented for BoxLoader".to_string()))
     }
 
-    fn load() -> Result<Scene, String> {
+    fn load() -> Result<Scene, SceneLoadError> {
         let mut vertices = Vec::with_capacity(36);
         const LEFT: f32 = -0.5;
         const RIGHT: f32 = 0.5;

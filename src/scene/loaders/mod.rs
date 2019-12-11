@@ -3,7 +3,12 @@ pub mod colladaloader;
 
 use super::Scene;
 
+#[derive(Debug, Eq, PartialEq)]
+pub enum SceneLoadError {
+    ColladaLoader(colladaloader::ColladaError),
+    BoxLoader(String),
+}
 pub trait SceneLoader {
-    fn from_str(input: &str) -> Result<Scene, String>;
-    fn load() -> Result<Scene, String>;
+    fn from_str(input: &str) -> Result<Scene, SceneLoadError>;
+    fn load<'a>() -> Result<Scene, SceneLoadError>;
 }
