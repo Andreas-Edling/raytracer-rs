@@ -65,16 +65,6 @@ impl Camera {
         }
     }
 
-    pub fn set_x_angle(&mut self, radians: f32) {
-        self.orientation_changed |= (self.y_angle_radians - radians).abs() > std::f32::EPSILON;
-        self.x_angle_radians = radians;
-    }
-
-    pub fn set_y_angle(&mut self, radians: f32) {
-        self.orientation_changed |= (self.y_angle_radians - radians).abs() > std::f32::EPSILON;
-        self.y_angle_radians = radians;
-    }
-
     pub fn add_x_angle(&mut self, radians: f32) {
         self.orientation_changed |= radians != 0.0;
         self.x_angle_radians += radians;

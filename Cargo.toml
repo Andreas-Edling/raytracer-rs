@@ -8,8 +8,7 @@ edition = "2018"
 
 [dependencies]
 
-#softcanvas = { path = "../../softcanvas"}
-#parseval ={ path = "../../parseval"}
+minifb = "0.14.0"
 
-softcanvas = { git = "https://github.com/Andreas-Edling/softcanvas" }
+#parseval ={ path = "../../parseval"}
 parseval = { git = "https://github.com/Andreas-Edling/parseval" }
