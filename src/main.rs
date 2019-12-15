@@ -34,25 +34,29 @@ fn generate_events(window: &Window) -> Vec<Event> {
 }
 
 
-fn main() -> Result<(), String>{
+fn main() -> Result<(), String> {
+
+    // setup
     const WIDTH: usize = 640;
     const HEIGHT: usize = 480;
     let mut window = Window::new("raytracer-rs", WIDTH, HEIGHT, WindowOptions::default()).map_err(|e| e.to_string())?;
-
     let frame = Arc::new(RwLock::new(vec![0u32; WIDTH * HEIGHT]));
     let (copy_frame_sender, copy_frame_reciever) = channel();
     let (copied_frame_sender, copied_frame_reciever) = channel();
     let (events_sender, events_receiver): (std::sync::mpsc::Sender<Vec<Event>>, std::sync::mpsc::Receiver<Vec<Event>>) = std::sync::mpsc::channel();
-
+    let (shutdown_sender, shutdown_receiver) = std::sync::mpsc::channel();
     let mut fps = Fps::new();
-
     let scene = ColladaLoader::from_file("./data/4boxes.dae").map_err(|e| e.to_string())?;
     let mut raytracer = raytracer::RayTracer::new(WIDTH, HEIGHT, scene);
 
-    std::thread::spawn({
+    // raytracer loop
+    let raytracer_thread = std::thread::spawn({
         let frame = Arc::clone(&frame);
         move || {
-            loop {
+
+            let mut running = true;
+            while running {
+                
                 let generated_frame = raytracer.trace_frame(); 
 
                 // lock & copy frame
@@ -66,7 +70,6 @@ fn main() -> Result<(), String>{
 
                 //wait for main thread
                 copied_frame_reciever.recv().expect("channel copied_frame_reciever failed on recv");
-
                 
                 for events in events_receiver.try_iter() {
                     for event in events {
@@ -89,12 +92,16 @@ fn main() -> Result<(), String>{
                 }
 
                 println!("fps: {:?} ", fps.fps());
+
+                if shutdown_receiver.try_recv().is_ok() {
+                    running = false;
+                }
             }
         }
     });
     
+    // main / gui loop
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        
         // update window with frame if available
         if copy_frame_reciever.try_recv().is_ok() {
             
@@ -114,6 +121,11 @@ fn main() -> Result<(), String>{
 
         std::thread::sleep(std::time::Duration::from_millis(16));
     }
+
+    // shutdown
+    copied_frame_sender.send(()).expect("channel copied_frame_sender failed on send"); //we need to send this to unblock raytracer thread
+    shutdown_sender.send(()).expect("unable to send shutdown signal");
+    raytracer_thread.join().expect("couldnt join raytracer thread");
     Ok(())
 }
 
