@@ -42,7 +42,7 @@ impl RGBA {
         let g = (self.g.min(1.0).max(0.0)*255.0) as u8;
         let b = (self.b.min(1.0).max(0.0)*255.0) as u8;
         let a = (self.a.min(1.0).max(0.0)*255.0) as u8;
-        r as u32 | (g as u32) << 8 | (b as u32) << 16 | (a as u32) << 24
+        b as u32 | (g as u32) << 8 | (r as u32) << 16 | (a as u32) << 24
         
     }
 }
