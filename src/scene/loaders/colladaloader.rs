@@ -1,7 +1,13 @@
+use std::{
+    fs::File,
+    io::prelude::*,
+    fmt,
+    error::Error,
+};
+
 use parseval::{
     xml,
     parsers::*,
-    parsers::ParsingError,
 };
 
 use crate::scene::{
@@ -36,6 +42,15 @@ impl SceneLoader for ColladaLoader {
     fn from_str(doc: &str) -> Result<Scene, SceneLoadError> {
         let collada = Collada::parse(doc).map_err(SceneLoadError::ColladaLoader)?;
         let scene = collada.to_scene_flatten();
+        Ok(scene)
+    }
+
+    fn from_file<P: AsRef<std::path::Path>>(path: P) -> Result<Scene, SceneLoadError>
+    {
+        let mut file = File::open(path)?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        let scene = ColladaLoader::from_str(&contents)?;
         Ok(scene)
     }
 
@@ -353,9 +368,9 @@ pub enum ColladaError {
     LibraryGeometriesParsing(ParsingError),
     LibraryVisualScenesParsing(ParsingError),
     LibrarySceneParsing(ParsingError),
-    RemainingData(String),
     ParseError(ParsingError),
-
+    RemainingData(String),
+    
     ElementError(xml::ElementError),
     
     GeometryConversion,
@@ -373,6 +388,59 @@ impl From<xml::ElementError> for ColladaError {
 impl From<ParsingError> for ColladaError {
     fn from(e: ParsingError) -> Self {
         ColladaError::ParseError(e)
+    }
+}
+
+impl fmt::Display for ColladaError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ColladaError::NotColladaDoc => write!(f,"Not a collada doc"),
+            ColladaError::ColladaElement(e) => write!(f,"ColladaElement error; {}", e.to_string()),
+            ColladaError::XmlDefinition(e) => write!(f,"XmlDefinition error; {}", e.to_string()),
+            ColladaError::AssetParsing(e) => write!(f,"AssetParsing error; {}", e.to_string()),
+            ColladaError::LibraryCamerasParsing(e) => write!(f,"LibraryCamerasParsing error; {}", e.to_string()),
+            ColladaError::LibraryLightsParsing(e) => write!(f,"LibraryLightsParsing error; {}", e.to_string()),
+            ColladaError::LibraryEffectsParsing(e) => write!(f,"LibraryEffectsParsing error; {}", e.to_string()),
+            ColladaError::LibraryImagesParsing(e) => write!(f,"LibraryImagesParsing error; {}", e.to_string()),
+            ColladaError::LibraryMaterialsParsing(e) => write!(f,"LibraryMaterialsParsing error; {}", e.to_string()),
+            ColladaError::LibraryGeometriesParsing(e) => write!(f,"LibraryGeometriesParsing error; {}", e.to_string()),
+            ColladaError::LibraryVisualScenesParsing(e) => write!(f,"LibraryVisualScenesParsing error; {}", e.to_string()),
+            ColladaError::LibrarySceneParsing(e) => write!(f,"LibrarySceneParsing error; {}", e.to_string()),
+            ColladaError::ParseError(e) => write!(f,"ParseError error; {}", e.to_string()),
+            ColladaError::RemainingData(s) => write!(f,"RemainingData error; {}", s),
+
+            ColladaError::ElementError(e) => write!(f,"ElementError error; {}", e.to_string()),
+            ColladaError::GeometryConversion => write!(f,"GeometryConversion error"),
+            ColladaError::VisualSceneConversion(s) => write!(f,"VisualSceneConversion error; {}", s),
+            ColladaError::LightsConversion(s) => write!(f,"LightsConversion error; {}", s),
+            ColladaError::CamerasConversion(s) => write!(f,"CamerasConversion error; {}", s),
+        }
+    }
+}
+
+impl Error for ColladaError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            ColladaError::NotColladaDoc => None,
+            ColladaError::ColladaElement(e) => Some(e),
+            ColladaError::XmlDefinition(e) => Some(e),
+            ColladaError::AssetParsing(e) => Some(e),
+            ColladaError::LibraryCamerasParsing(e) => Some(e),
+            ColladaError::LibraryLightsParsing(e) => Some(e),
+            ColladaError::LibraryEffectsParsing(e) => Some(e),
+            ColladaError::LibraryImagesParsing(e) => Some(e),
+            ColladaError::LibraryMaterialsParsing(e) => Some(e),
+            ColladaError::LibraryGeometriesParsing(e) => Some(e),
+            ColladaError::LibraryVisualScenesParsing(e) => Some(e),
+            ColladaError::LibrarySceneParsing(e) => Some(e),
+            ColladaError::ParseError(e) => Some(e),
+            ColladaError::RemainingData(_) => None,
+            ColladaError::ElementError(e) => Some(e),
+            ColladaError::GeometryConversion => None,
+            ColladaError::VisualSceneConversion(_) => None,
+            ColladaError::LightsConversion(_) => None,
+            ColladaError::CamerasConversion(_) => None,
+        }
     }
 }
 

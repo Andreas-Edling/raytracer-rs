@@ -18,6 +18,11 @@ impl SceneLoader for BoxLoader {
         Err(SceneLoadError::BoxLoader("not implemented for BoxLoader".to_string()))
     }
 
+    fn from_file<P: AsRef<std::path::Path>>(_path: P) -> Result<Scene, SceneLoadError>
+    {
+        Err(SceneLoadError::BoxLoader("not implemented for BoxLoader".to_string()))
+    }
+
     fn load() -> Result<Scene, SceneLoadError> {
         let mut vertices = Vec::with_capacity(36);
         const LEFT: f32 = -0.5;

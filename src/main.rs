@@ -3,9 +3,7 @@ mod raytracer;
 mod scene;
 mod vecmath;
 
-use std::fs::File;
 use std::{
-    io::prelude::*,
     sync::mpsc::channel,
     sync::{Arc, RwLock},
 };
@@ -44,30 +42,20 @@ fn main() -> Result<(), String>{
     let frame = Arc::new(RwLock::new(vec![0u32; WIDTH * HEIGHT]));
     let (copy_frame_sender, copy_frame_reciever) = channel();
     let (copied_frame_sender, copied_frame_reciever) = channel();
-
     let (events_sender, events_receiver): (std::sync::mpsc::Sender<Vec<Event>>, std::sync::mpsc::Receiver<Vec<Event>>) = std::sync::mpsc::channel();
 
-    let contents = {
-        let mut file = File::open("./data/4boxes.dae").map_err(|e| e.to_string())?;
-        
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).map_err(|e| e.to_string())?;
-        contents
-    };
-    let scene = ColladaLoader::from_str(&contents).map_err(|e| format!("{:?}",e))?;
+    let mut fps = Fps::new();
+
+    let scene = ColladaLoader::from_file("./data/4boxes.dae").map_err(|e| e.to_string())?;
     let mut raytracer = raytracer::RayTracer::new(WIDTH, HEIGHT, scene);
 
-    #[rustfmt::skip]
     std::thread::spawn({
         let frame = Arc::clone(&frame);
-
         move || {
-            let mut last_time = std::time::Instant::now();
-
             loop {
                 let generated_frame = raytracer.trace_frame(); 
 
-                // lock & copy data
+                // lock & copy frame
                 {
                     let mut frame_w = frame.write().unwrap();
                     *frame_w = generated_frame; // TODO - get rid of this copy.
@@ -100,17 +88,14 @@ fn main() -> Result<(), String>{
                     }
                 }
 
-                let now = std::time::Instant::now();
-                let frame_duration: std::time::Duration = now - last_time;
-                last_time = now;
-                println!("fps: {:?}  frame duration: {:?}", 1.0/frame_duration.as_secs_f32(), frame_duration);
+                println!("fps: {:?} ", fps.fps());
             }
         }
     });
     
     while window.is_open() && !window.is_key_down(Key::Escape) {
         
-        // update windowwith frame if available
+        // update window with frame if available
         if copy_frame_reciever.try_recv().is_ok() {
             
             // lock & update
@@ -130,4 +115,22 @@ fn main() -> Result<(), String>{
         std::thread::sleep(std::time::Duration::from_millis(16));
     }
     Ok(())
+}
+
+
+struct Fps {
+    last_iteration: std::time::Instant
+}
+impl Fps {
+    fn new() -> Self {
+        let last_iteration = std::time::Instant::now(); 
+        Fps{last_iteration}
+    }
+
+    fn fps(&mut self) -> f32 {
+        let now = std::time::Instant::now();
+        let frame_duration: std::time::Duration = now - self.last_iteration;
+        self.last_iteration = now;
+        1.0/frame_duration.as_secs_f32()
+    }
 }
