@@ -62,7 +62,7 @@ fn main() -> Result<(), String> {
                 
                 let ldr_frame = generated_frame.iter()
                     .map(|pix| tonemap::simple_map(pix))
-                    .map(|pix| pix.to_u32())
+                    .map(|pix| scene::color::RGBA::from_rgb(pix, 1.0).to_u32())
                     .collect();
 
                 // lock & copy frame

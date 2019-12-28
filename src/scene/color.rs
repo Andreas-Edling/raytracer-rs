@@ -1,4 +1,4 @@
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct RGB {
     pub r: f32,
     pub g: f32,
@@ -7,6 +7,10 @@ pub struct RGB {
 impl RGB {
     pub fn new(r: f32, g: f32, b: f32) -> Self {
         RGB { r, g, b }
+    }
+
+    pub const fn black() -> Self {
+        RGB{r: 0.0, g: 0.0, b: 0.0}
     }
 }
 impl std::ops::AddAssign for RGB {

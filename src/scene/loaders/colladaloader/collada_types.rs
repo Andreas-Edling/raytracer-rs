@@ -1,6 +1,5 @@
 use crate::{
     scene::Light,
-    vecmath::Vec3,
 };
 
 pub struct ColladaCamera {
@@ -88,6 +87,7 @@ impl ColladaMatrix {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::vecmath::Vec3;
 
     #[test]
     fn collada_mat_to_vecmat_translation() {

@@ -4,7 +4,7 @@ use crate::vecmath::{cross, dot};
 use crate::scene::{
     Scene,
     Vertex,
-    color::{RGB, RGBA},
+    color::RGB,
     Light,
     camera::Camera,
     Ray,
@@ -151,7 +151,7 @@ impl RayTracer {
     }
 
     #[rustfmt::skip]
-    pub fn trace_frame(&mut self) -> Vec<RGBA> {
+    pub fn trace_frame(&mut self) -> Vec<RGB> {
         let rays = self.camera.get_rays();
         let mut frame = Vec::with_capacity(self.width*self.height);
 
@@ -182,9 +182,9 @@ impl RayTracer {
             let color = match closest_hit {
                 Some(ref hit) => {
                     let rgb = RayTracer::shade(ray, hit, &self.scene.lights, &self.scene.transformed_vertices);
-                    RGBA::from_rgb(rgb, 1.0)
+                    rgb
                 },
-                None => RGBA::new(0.0, 0.0, 0.0, 0.0),
+                None => RGB::black()
             };
             frame.push(color);
         }
