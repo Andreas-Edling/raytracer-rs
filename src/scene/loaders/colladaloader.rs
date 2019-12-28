@@ -224,7 +224,6 @@ fn to_cameras(elem: &xml::Element) -> Result<Vec<ColladaCamera>, ColladaError> {
                     id, 
                     fov, 
                     _aspect_ratio, 
-                    _scene_matrix: crate::vecmath::Matrix::ident(), // will be gotten from VisualSceneNode
                 }
             );
         }
@@ -445,7 +444,7 @@ impl Error for ColladaError {
 }
 
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
     use super::*;
 

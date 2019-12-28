@@ -1,8 +1,8 @@
 #[derive(Debug,Copy,Clone)]
 pub struct RGB {
-    r: f32,
-    g: f32,
-    b: f32,
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
 }
 impl RGB {
     pub fn new(r: f32, g: f32, b: f32) -> Self {
@@ -23,10 +23,10 @@ impl std::ops::AddAssign for RGB {
 #[rustfmt::skip] impl std::ops::Mul<&RGB> for f32 { type Output = RGB; fn mul(self, other: &RGB) -> RGB { RGB::new(self * other.r, self * other.g, self * other.b) }}
 
 pub struct RGBA {
-    r: f32,
-    g: f32,
-    b: f32,
-    a: f32,
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+    pub a: f32,
 }
 impl RGBA {
     pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {

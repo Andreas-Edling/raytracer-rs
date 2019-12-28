@@ -5,8 +5,8 @@
       <author>Blender User</author>
       <authoring_tool>Blender 2.80.75 commit date:2019-07-29, commit time:14:47, hash:f6cb5f54494e</authoring_tool>
     </contributor>
-    <created>2019-12-04T10:34:10</created>
-    <modified>2019-12-04T10:34:10</modified>
+    <created>2019-12-17T17:56:27</created>
+    <modified>2019-12-17T17:56:27</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -35,7 +35,7 @@
     <light id="Light-light" name="Light.001">
       <technique_common>
         <point>
-          <color sid="color">1 1 1</color>
+          <color sid="color">1000 1000 1000</color>
           <constant_attenuation>1</constant_attenuation>
           <linear_attenuation>0</linear_attenuation>
           <quadratic_attenuation>0.00111109</quadratic_attenuation>
@@ -53,7 +53,7 @@
           <shadow_r sid="blender_shadow_r" type="float">0</shadow_r>
           <shadow_g sid="blender_shadow_g" type="float">0</shadow_g>
           <shadow_b sid="blender_shadow_b" type="float">0</shadow_b>
-          <energy sid="blender_energy" type="float">1</energy>
+          <energy sid="blender_energy" type="float">1000</energy>
           <dist sid="blender_dist" type="float">29.99998</dist>
           <spotsize sid="spotsize" type="float">75</spotsize>
           <spotblend sid="spotblend" type="float">0.15</spotblend>
@@ -132,11 +132,14 @@
         <technique sid="common">
           <lambert>
             <emission>
-              <color sid="emission">0 0 0 1</color>
+              <color sid="emission">0.3392857 0 0 1</color>
             </emission>
             <diffuse>
-              <color sid="diffuse">0.8 0.8 0.8 1</color>
+              <color sid="diffuse">1 0 0 1</color>
             </diffuse>
+            <reflectivity>
+              <float sid="specular">0.4225941</float>
+            </reflectivity>
             <index_of_refraction>
               <float sid="ior">1.45</float>
             </index_of_refraction>

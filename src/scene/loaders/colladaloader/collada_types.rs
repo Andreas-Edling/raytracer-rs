@@ -1,12 +1,12 @@
-use crate::scene::{
-    Light,
+use crate::{
+    scene::Light,
+    vecmath::Vec3,
 };
 
 pub struct ColladaCamera {
     pub id: String,
     pub fov: f32,
     pub _aspect_ratio: f32,
-    pub _scene_matrix: crate::vecmath::Matrix,
 }
 
 pub struct ColladaLight {
@@ -85,7 +85,7 @@ impl ColladaMatrix {
 
 
 
-#[cfg(tests)]
+#[cfg(test)]
 mod tests {
     use super::*;
 

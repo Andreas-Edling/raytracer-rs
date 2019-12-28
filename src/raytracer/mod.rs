@@ -151,7 +151,7 @@ impl RayTracer {
     }
 
     #[rustfmt::skip]
-    pub fn trace_frame(&mut self) -> Vec<u32> {
+    pub fn trace_frame(&mut self) -> Vec<RGBA> {
         let rays = self.camera.get_rays();
         let mut frame = Vec::with_capacity(self.width*self.height);
 
@@ -179,14 +179,14 @@ impl RayTracer {
                 }
             }
 
-            let coloru32 = match closest_hit {
+            let color = match closest_hit {
                 Some(ref hit) => {
                     let rgb = RayTracer::shade(ray, hit, &self.scene.lights, &self.scene.transformed_vertices);
-                    RGBA::from_rgb(rgb, 1.0).to_u32()
+                    RGBA::from_rgb(rgb, 1.0)
                 },
-                None => 0x00_00_00_00u32,
+                None => RGBA::new(0.0, 0.0, 0.0, 0.0),
             };
-            frame.push(coloru32);
+            frame.push(color);
         }
 
         frame

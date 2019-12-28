@@ -44,8 +44,8 @@ impl Camera {
             for x in 0..width {
                 let dir_x = -max_x + 2.0*max_x*(x as f32 / width as f32);
 
-                let pos = Vec3::new(x as f32 / width as f32, y as f32 / height as f32, 0.0);
-                let dir = Vec3::new(dir_x, dir_y, 1.0);
+                let pos = Vec3::new(x as f32 / width as f32, 1.0 - y as f32 / height as f32, 0.0);
+                let dir = Vec3::new(dir_x, -dir_y, 1.0);
                 let pos = orientation_matrix * Vec4::from_vec3(&pos);
                 let mut dir = rotation_matrix * Vec4::from_vec3(&dir);
                 dir.w = 1.0;

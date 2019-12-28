@@ -2,6 +2,7 @@
 mod raytracer;
 mod scene;
 mod vecmath;
+mod tonemap;
 
 use std::{
     sync::mpsc::channel,
@@ -58,11 +59,16 @@ fn main() -> Result<(), String> {
             while running {
                 
                 let generated_frame = raytracer.trace_frame(); 
+                
+                let ldr_frame = generated_frame.iter()
+                    .map(|pix| tonemap::simple_map(pix))
+                    .map(|pix| pix.to_u32())
+                    .collect();
 
                 // lock & copy frame
                 {
                     let mut frame_w = frame.write().unwrap();
-                    *frame_w = generated_frame; // TODO - get rid of this copy.
+                    *frame_w = ldr_frame; 
                 }
 
                 // notify main thread
