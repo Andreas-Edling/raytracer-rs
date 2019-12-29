@@ -1,5 +1,8 @@
 use crate::{
-    scene::Light,
+    scene::{
+        Light,
+        color::RGBA,
+    },
 };
 
 pub struct ColladaCamera {
@@ -13,14 +16,24 @@ pub struct ColladaLight {
     pub light: Light,
 }
 
-pub struct ColladaEffect;
+pub struct ColladaEffect {
+    pub id: String,
+    pub emission: RGBA,
+    pub diffuse: RGBA,
+    pub specular: Option<f32>,
+    pub index_of_refraction: f32,
+}
 
-pub struct ColladaMaterial;
+pub struct ColladaMaterial {
+    pub id: String,
+    pub effect_url: String,
+}
 
 pub struct ColladaGeometry {
     pub vertices: Vec<f32>,
     pub triangles: Vec<u32>,
     pub id: String,
+    pub material_id: String,
 }
 
 pub struct ColladaVisualScene {

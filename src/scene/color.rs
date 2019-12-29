@@ -13,6 +13,20 @@ impl RGB {
         RGB{r: 0.0, g: 0.0, b: 0.0}
     }
 }
+
+impl Default for RGB {
+    fn default() -> Self {
+        RGB::new(1000.0, 0.0, 1000.0)
+    }
+}
+
+impl From<RGBA> for RGB {
+    fn from(c: RGBA) -> Self {
+        RGB::new(c.r, c.g, c.b)
+    }
+}
+
+
 impl std::ops::AddAssign for RGB {
     fn add_assign(&mut self, other: Self) {
         self.r += other.r;
@@ -26,6 +40,8 @@ impl std::ops::AddAssign for RGB {
 #[rustfmt::skip] impl std::ops::Mul< RGB> for f32 { type Output = RGB; fn mul(self, other: RGB) -> RGB { RGB::new(self * other.r, self * other.g, self * other.b) }}
 #[rustfmt::skip] impl std::ops::Mul<&RGB> for f32 { type Output = RGB; fn mul(self, other: &RGB) -> RGB { RGB::new(self * other.r, self * other.g, self * other.b) }}
 
+
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct RGBA {
     pub r: f32,
     pub g: f32,

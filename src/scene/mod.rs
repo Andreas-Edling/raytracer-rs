@@ -54,5 +54,8 @@ impl Geometry {
 
 #[derive(Debug, Clone, Default)]
 pub struct Material {
-
+    pub diffuse: RGB,
+    pub emissive: RGB,
+    pub specular: Option<f32>,
+    pub index_of_refraction: f32,
 }

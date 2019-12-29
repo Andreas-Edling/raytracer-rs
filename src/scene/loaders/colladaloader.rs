@@ -15,7 +15,7 @@ use crate::scene::{
     Vertex,
     Geometry,
     Material,
-    color::RGB,
+    color::{RGB, RGBA},
     Light,
     camera::Camera,
     Vec3,
@@ -64,8 +64,8 @@ impl SceneLoader for ColladaLoader {
 pub struct Collada {
     cameras: Vec<ColladaCamera>,
     lights: Vec<ColladaLight>,
-    _effects: Vec<ColladaEffect>,
-    _materials: Vec<ColladaMaterial>,
+    effects: Vec<ColladaEffect>,
+    materials: Vec<ColladaMaterial>,
     geometries: Vec<ColladaGeometry>,
     visual_scenes: Vec<ColladaVisualScene>
 }
@@ -115,8 +115,8 @@ impl Collada {
 
         let cameras = to_cameras(&cameras_element)?;
         let lights = to_lights(&lights_element)?;
-        let _effects = to_effects(&effects_element)?;
-        let _materials = to_materials(&materials_element)?;
+        let effects = to_effects(&effects_element)?;
+        let materials = to_materials(&materials_element)?;
         let geometries = to_geometries(&geometries_element)?;
         let visual_scenes = to_visual_scenes(&visual_scenes_element)?;
 
@@ -124,8 +124,8 @@ impl Collada {
             Collada {
                 cameras,
                 lights,
-                _effects,
-                _materials,
+                effects,
+                materials,
                 geometries,
                 visual_scenes,
             }
@@ -145,6 +145,7 @@ impl Collada {
                         continue;
                     }
                     cameras.push(Camera::from_orientation_matrix(640, 480, &node.matrix.to_vecmath_matrix(), camera.fov));
+                    break;
                 }
 
                 for light in &self.lights {
@@ -153,6 +154,7 @@ impl Collada {
                     }
                     let transformed_light_pos = crate::vecmath::Vec3::from(node.matrix.to_vecmath_matrix() * crate::vecmath::Vec4::from_vec3(&light.light.pos));
                     lights.push(Light::new(transformed_light_pos, light.light.color));
+                    break;
                 }
 
                 for geometry in &self.geometries {
@@ -183,7 +185,24 @@ impl Collada {
                         .map(|vtx| crate::vecmath::Vec3::from(node.matrix.to_vecmath_matrix() * crate::vecmath::Vec4::from_vec3(vtx)))
                         .collect();
 
-                    geometries.push(Geometry::new(geom_vertices, Material::default()));
+                    let material = {
+                        match self.materials.iter().find(|m| m.id == geometry.material_id) {
+                            None => Material::default(),
+                            Some(collada_material) => match self.effects.iter().find(|eff| eff.id == collada_material.effect_url) {
+                                None => Material::default(),
+                                Some(collada_effect) => {
+                                    Material {
+                                        diffuse: collada_effect.diffuse.into(),
+                                        emissive: collada_effect.diffuse.into(),
+                                        specular: collada_effect.specular,
+                                        index_of_refraction: collada_effect.index_of_refraction,
+                                    }
+                                }
+                            }
+                        }
+                    };
+
+                    geometries.push(Geometry::new(geom_vertices, material));
                     break;
                 }
             }
@@ -196,6 +215,7 @@ impl Collada {
         }
     }
 }
+
 
 fn to_cameras(elem: &xml::Element) -> Result<Vec<ColladaCamera>, ColladaError> {
     if let xml::DataOrElements::Elements(camera_elements) = &elem.data_or_elements {
@@ -232,6 +252,7 @@ fn to_cameras(elem: &xml::Element) -> Result<Vec<ColladaCamera>, ColladaError> {
     Err(ColladaError::CamerasConversion("cant convert cameras".to_string()))
 }
 
+
 fn to_lights(elem: &xml::Element) -> Result<Vec<ColladaLight>, ColladaError> {
     if let xml::DataOrElements::Elements(light_elements) = &elem.data_or_elements {
         let mut lights = vec![];
@@ -239,18 +260,16 @@ fn to_lights(elem: &xml::Element) -> Result<Vec<ColladaLight>, ColladaError> {
 
             let id = light_elem.get_attrib_value("id")?.to_string();
             let color = {
-                let color_elem = light_elem
+                let color_str = light_elem
                     .get_child_by_name("technique_common")?
                     .get_child_by_name("point")?
-                    .get_child_by_name("color")?;
+                    .get_child_by_name("color")?
+                    .get_as_data().map_err(|_| ColladaError::LightsConversion("cant get color".to_string()))?;
 
-                match &color_elem.data_or_elements {
-                    xml::DataOrElements::Data(color_data) =>{ let (_, color_array) = array_f32().parse(color_data)?; Ok(color_array)},
-                    xml::DataOrElements::Elements(_) => Err(ColladaError::LightsConversion("cant get color".to_string())),
-                }
-            }?;
+                let (_, color_array) = array_f32().parse(color_str)?; 
+                RGB::new(color_array[0], color_array[1], color_array[2])
+            };
 
-            let color = RGB::new(color[0], color[1], color[2]);
             let pos = Vec3::new(0.0,0.0,0.0); //transform with position is found in visualScenes element
             lights.push(ColladaLight{ id, light: Light::new(pos, color)});
         }
@@ -259,13 +278,90 @@ fn to_lights(elem: &xml::Element) -> Result<Vec<ColladaLight>, ColladaError> {
     Err(ColladaError::LightsConversion("cant convert lights".to_string()))
 }
 
-fn to_effects(_elem: &xml::Element) -> Result<Vec<ColladaEffect>, ColladaError> {
-    Ok(vec![])
+
+fn to_effects(elem: &xml::Element) -> Result<Vec<ColladaEffect>, ColladaError> {
+    if let xml::DataOrElements::Elements(effect_elements) = &elem.data_or_elements {
+        let mut effects = vec![];
+        for effect_elem in effect_elements {
+            let id = effect_elem.get_attrib_value("id")?.to_string();
+            let lambert_elem = effect_elem
+                .get_child_by_name("profile_COMMON")?
+                .get_child_by_name("technique")?
+                .get_child_by_name("lambert")?;
+            
+            let emission = {
+                let data_str = lambert_elem
+                    .get_child_by_name("emission")?
+                    .get_child_by_name("color")?
+                    .get_as_data().map_err(|_| ColladaError::EffectsConversion("Can't get emission color".to_string()))?;
+                    
+                let (_, color_array) = array_f32().parse(data_str)?; 
+                RGBA::new(color_array[0], color_array[1], color_array[2], color_array[3])
+            };
+
+            let diffuse = {
+                let data_str = lambert_elem
+                    .get_child_by_name("diffuse")?
+                    .get_child_by_name("color")?
+                    .get_as_data().map_err(|_| ColladaError::EffectsConversion("Can't get diffuse color".to_string()))?;
+
+                let (_, color_array) = array_f32().parse(data_str)?; 
+                RGBA::new(color_array[0], color_array[1], color_array[2], color_array[3])
+            };
+
+            let index_of_refraction = {
+                let data_str = lambert_elem
+                    .get_child_by_name("index_of_refraction")?
+                    .get_child_by_attrib(("sid","ior".to_string()))?
+                    .get_as_data().map_err(|_| ColladaError::EffectsConversion("Can't get index of refraction".to_string()))?;
+
+                let (_, ior_array) = array_f32().parse(data_str)?; 
+                ior_array[0]
+            };
+            
+            let specular = match lambert_elem.get_child_by_name("reflectivity") {
+                Err(_) => None,
+                Ok(refl) => {
+                    let data_str = refl
+                        .get_child_by_attrib(("sid", "specular".to_string()))?
+                        .get_as_data().map_err(|_| ColladaError::EffectsConversion("Can't get specular".to_string()))?;
+                        
+                    let (_, specular_array) = array_f32().parse(data_str)?; 
+                    Some(specular_array[0])
+                },
+            };
+
+            effects.push(ColladaEffect{
+                id,
+                emission,
+                diffuse,
+                specular,
+                index_of_refraction
+            });
+        }
+        return Ok(effects);
+    }
+    Err(ColladaError::EffectsConversion("can't convert effects".to_string()))
 }
 
-fn to_materials(_elem: &xml::Element) -> Result<Vec<ColladaMaterial>, ColladaError> {
-    Ok(vec![])
+
+fn to_materials(elem: &xml::Element) -> Result<Vec<ColladaMaterial>, ColladaError> {
+    if let xml::DataOrElements::Elements(material_elements) = &elem.data_or_elements {
+        let mut materials = vec![];
+        for material_elem in material_elements {
+            let id = material_elem.get_attrib_value("id")?.to_string();
+            let effect_url = material_elem
+                .get_child_by_name("instance_effect")?
+                .get_attrib_value("url")?[1..] // strip '#'
+                .to_string();
+
+            materials.push( ColladaMaterial{ id, effect_url })
+        }
+        return Ok(materials);
+    }
+    Err(ColladaError::MaterialsConversion("can't convert materials".to_string()))
 }
+
 
 fn to_visual_scenes(elem: &xml::Element) -> Result<Vec<ColladaVisualScene>, ColladaError> {
     if let xml::DataOrElements::Elements(scenes) = &elem.data_or_elements {
@@ -305,6 +401,7 @@ fn to_visual_scenes(elem: &xml::Element) -> Result<Vec<ColladaVisualScene>, Coll
     Err(ColladaError::VisualSceneConversion("No scene element(s)".to_string()))
 }
 
+
 fn to_geometries(elem: &xml::Element) -> Result<Vec<ColladaGeometry>, ColladaError> {
     if let xml::DataOrElements::Elements(geometry_elements) = &elem.data_or_elements {
         let mut geometries = vec![];
@@ -317,38 +414,42 @@ fn to_geometries(elem: &xml::Element) -> Result<Vec<ColladaGeometry>, ColladaErr
 }
 
 fn convert_geometry(geometry_element: &xml::Element) -> Result<ColladaGeometry, ColladaError> {
-    let id = geometry_element.get_attrib_value("id")?;
+    let id = geometry_element.get_attrib_value("id")?.to_string();
     let mesh = geometry_element.get_child_by_name("mesh")?;
 
     // get vertex positions
-    let mut vertices = vec![];
-    let positions_array = mesh
+    let vertices_str = mesh
         .get_child_by_attrib(("id", format!("{}-positions",id)))?
-        .get_child_by_attrib(("id", format!("{}-positions-array",id)))?;
+        .get_child_by_attrib(("id", format!("{}-positions-array",id)))?
+        .get_as_data()?;
 
-    if let xml::DataOrElements::Data(vertices_str) = &positions_array.data_or_elements {
-        let (_, parsed_vertices) = array_f32().parse(vertices_str)?;
-        vertices = parsed_vertices;
-    }
+    let (_, parsed_vertices) = array_f32().parse(vertices_str)?;
+    let vertices = parsed_vertices;
 
+    // get material id
+    let material_id = mesh
+        .get_child_by_name("triangles")?
+        .get_attrib_value("material")?
+        .to_string();
+    
     // get triangle indices
     let mut triangles = vec![];
-    let index_array = mesh
+    let triangle_indices_str = mesh
         .get_child_by_name("triangles")?
-        .get_child_by_name("p")?;
+        .get_child_by_name("p")?
+        .get_as_data()?;
 
-    if let xml::DataOrElements::Data(triangle_indices_str) = &index_array.data_or_elements {
-        let (_, parsed_index_array) = array_u32().parse(triangle_indices_str)?;
-        for (pos_index, _normal_index, _texcoord_index) in parsed_index_array.chunks(3).map(|indices| (indices[0], indices[1], indices[2])) {
-            triangles.push(pos_index);
-        }
+    let (_, parsed_index_array) = array_u32().parse(triangle_indices_str)?;
+    for (pos_index, _normal_index, _texcoord_index) in parsed_index_array.chunks(3).map(|indices| (indices[0], indices[1], indices[2])) {
+        triangles.push(pos_index);
     }
 
     Ok(
         ColladaGeometry {
             vertices,
             triangles,
-            id: id.to_string(),
+            id,
+            material_id,
         }
     )
 }
@@ -375,6 +476,8 @@ pub enum ColladaError {
     GeometryConversion,
     VisualSceneConversion(String),
     LightsConversion(String),
+    MaterialsConversion(String),
+    EffectsConversion(String),
     CamerasConversion(String),
 }
 
@@ -412,6 +515,8 @@ impl fmt::Display for ColladaError {
             ColladaError::GeometryConversion => write!(f,"GeometryConversion error"),
             ColladaError::VisualSceneConversion(s) => write!(f,"VisualSceneConversion error; {}", s),
             ColladaError::LightsConversion(s) => write!(f,"LightsConversion error; {}", s),
+            ColladaError::MaterialsConversion(s) => write!(f,"MaterialsConversion error; {}", s),
+            ColladaError::EffectsConversion(s) => write!(f,"EffectsConversion error; {}", s),
             ColladaError::CamerasConversion(s) => write!(f,"CamerasConversion error; {}", s),
         }
     }
@@ -438,6 +543,8 @@ impl Error for ColladaError {
             ColladaError::GeometryConversion => None,
             ColladaError::VisualSceneConversion(_) => None,
             ColladaError::LightsConversion(_) => None,
+            ColladaError::MaterialsConversion(_) => None,
+            ColladaError::EffectsConversion(_) => None,
             ColladaError::CamerasConversion(_) => None,
         }
     }
