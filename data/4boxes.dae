@@ -5,8 +5,8 @@
       <author>Blender User</author>
       <authoring_tool>Blender 2.80.75 commit date:2019-07-29, commit time:14:47, hash:f6cb5f54494e</authoring_tool>
     </contributor>
-    <created>2019-12-17T17:56:27</created>
-    <modified>2019-12-17T17:56:27</modified>
+    <created>2019-12-28T09:59:09</created>
+    <modified>2019-12-28T09:59:09</modified>
     <unit name="meter" meter="1"/>
     <up_axis>Z_UP</up_axis>
   </asset>
@@ -35,7 +35,7 @@
     <light id="Light-light" name="Light.001">
       <technique_common>
         <point>
-          <color sid="color">1000 1000 1000</color>
+          <color sid="color">10 10 10</color>
           <constant_attenuation>1</constant_attenuation>
           <linear_attenuation>0</linear_attenuation>
           <quadratic_attenuation>0.00111109</quadratic_attenuation>
@@ -53,7 +53,7 @@
           <shadow_r sid="blender_shadow_r" type="float">0</shadow_r>
           <shadow_g sid="blender_shadow_g" type="float">0</shadow_g>
           <shadow_b sid="blender_shadow_b" type="float">0</shadow_b>
-          <energy sid="blender_energy" type="float">1000</energy>
+          <energy sid="blender_energy" type="float">10</energy>
           <dist sid="blender_dist" type="float">29.99998</dist>
           <spotsize sid="spotsize" type="float">75</spotsize>
           <spotblend sid="spotblend" type="float">0.15</spotblend>

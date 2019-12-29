@@ -4,6 +4,8 @@ pub use super::{SceneLoader, SceneLoadError};
 use crate::scene::{
     Scene, 
     Vertex,
+    Geometry,
+    Material,
     color::RGB,
     Light,
     camera::Camera,
@@ -74,7 +76,7 @@ impl SceneLoader for BoxLoader {
         vertices.push(Vertex::new(RIGHT, DOWN, FAR));
         vertices.push(Vertex::new(LEFT, DOWN, FAR));
 
-        let transformed_vertices = vertices.clone();
+        let geometries = vec![Geometry::new(vertices, Material::default())];
 
         let lights = vec![Light::new(
             Vec3::new(RIGHT*3.0, UP*2.0, NEAR*2.0),
@@ -82,6 +84,6 @@ impl SceneLoader for BoxLoader {
         )];
 
         let cameras = vec![Camera::new(640,480, &Vec3::new(0.0, 0.0, 0.0), 60.0)];
-        Ok( Scene { vertices, lights, transformed_vertices, cameras } )
+        Ok( Scene { geometries, lights, cameras } )
     }
 }

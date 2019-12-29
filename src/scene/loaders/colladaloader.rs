@@ -13,6 +13,8 @@ use parseval::{
 use crate::scene::{
     Scene, 
     Vertex,
+    Geometry,
+    Material,
     color::RGB,
     Light,
     camera::Camera,
@@ -131,7 +133,7 @@ impl Collada {
     }
 
     pub fn to_scene_flatten(&self) -> Scene {
-        let mut vertices = vec![];
+        let mut geometries = vec![];
         let mut lights = vec![];
         let mut cameras = vec![];
 
@@ -177,21 +179,19 @@ impl Collada {
                         ));
                     }
 
-                    for vertex in geom_vertices.iter() {
-                        let transformed = crate::vecmath::Vec3::from(node.matrix.to_vecmath_matrix() * crate::vecmath::Vec4::from_vec3(vertex));
-                        vertices.push(transformed);
-                    }
+                    let geom_vertices = geom_vertices.iter()
+                        .map(|vtx| crate::vecmath::Vec3::from(node.matrix.to_vecmath_matrix() * crate::vecmath::Vec4::from_vec3(vtx)))
+                        .collect();
+
+                    geometries.push(Geometry::new(geom_vertices, Material::default()));
                     break;
                 }
             }
         }
 
-        let transformed_vertices = vertices.clone();
-
         Scene {
-            vertices,
+            geometries,
             lights,
-            transformed_vertices,
             cameras,
         }
     }

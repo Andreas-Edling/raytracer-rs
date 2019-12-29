@@ -123,11 +123,12 @@ fn intersect_later_out(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Opti
 
 struct Hit {
     distance: f32,
+    geometry_index: usize,
     vertex_index: usize,
 }
 impl Hit {
-    fn new(distance: f32, vertex_index: usize) -> Self {
-        Hit{ distance, vertex_index}
+    fn new(distance: f32, geometry_index: usize, vertex_index: usize) -> Self {
+        Hit{ distance, geometry_index, vertex_index}
     }
 }
 
@@ -155,33 +156,34 @@ impl RayTracer {
         let rays = self.camera.get_rays();
         let mut frame = Vec::with_capacity(self.width*self.height);
 
-        let mut intersect_vals = vec![None;self.scene.transformed_vertices.len()/3];
-
         for ray in rays {
             let mut closest_hit = None;
 
-            for (i,tri_vertices) in self.scene.transformed_vertices.chunks(3).enumerate() {
-                intersect_vals[i] = intersect_late_out(ray, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]);
-            }
+            for (geom_idx, geom) in self.scene.geometries.iter().enumerate() {
 
-            for (i, intersect_val) in intersect_vals.iter().enumerate() {
-                match (&closest_hit, intersect_val) {
-                    (None, None) => (),
-                    (Some(_), None) => (),
-                    (None, Some(dist)) => {
-                        closest_hit = Some(Hit::new(*dist, i*3));
-                    },
-                    (Some(hit), Some(dist)) => {
-                        if  *dist < hit.distance {
-                            closest_hit = Some(Hit::new(*dist, i*3));
-                        }
-                    },
+                let intersect_distances: Vec<Option<f32>> = geom.transformed_vertices.chunks(3)
+                    .map( |tri_vertices| intersect_late_out(ray, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]))
+                    .collect();
+   
+                for (vtx_idx, intersect_distance) in intersect_distances.iter().enumerate() {
+                    match (&closest_hit, intersect_distance) {
+                        (None, None) => (),
+                        (Some(_), None) => (),
+                        (None, Some(dist)) => {
+                            closest_hit = Some(Hit::new(*dist, geom_idx, vtx_idx*3));
+                        },
+                        (Some(hit), Some(dist)) => {
+                            if  *dist < hit.distance {
+                                closest_hit = Some(Hit::new(*dist, geom_idx, vtx_idx*3));
+                            }
+                        },
+                    }
                 }
             }
 
             let color = match closest_hit {
                 Some(ref hit) => {
-                    let rgb = RayTracer::shade(ray, hit, &self.scene.lights, &self.scene.transformed_vertices);
+                    let rgb = RayTracer::shade(ray, hit, &self.scene.lights, &self.scene.geometries[hit.geometry_index].transformed_vertices);
                     rgb
                 },
                 None => RGB::black()
