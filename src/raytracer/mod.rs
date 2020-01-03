@@ -1,126 +1,17 @@
 
+mod intersect;
+
 use rand::Rng;
 
 use crate::vecmath::{cross, dot, Vec3};
 
 use crate::scene::{
     Scene,
-    Vertex,
     color::RGB,
     camera::Camera,
     Ray,
 };
 
-
-#[allow(dead_code)]
-fn intersect(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
-    // Möller-Trumbore algo
-
-    let v0v1 = v1 - v0;
-    let v0v2 = v2 - v0;
-    let pvec = cross(&ray.dir, &v0v2);
-    let det = dot(&v0v1, &pvec);
-
-    // ray and triangle are parallel if det is close to 0
-    if det.abs() < std::f32::EPSILON {
-        // switch to "if det < std::f32::EPSILON { return None };" for backface culling
-        return None;
-    }
-    let inv_det = 1.0 / det;
-
-    let tvec = &ray.pos - v0;
-    let u = dot(&tvec, &pvec) * inv_det;
-    if u < 0.0 || u > 1.0 {
-        return None;
-    }
-
-    let qvec = cross(&tvec, &v0v1);
-    let v = dot(&ray.dir, &qvec) * inv_det;
-    if v < 0.0 || u + v > 1.0 {
-        return None;
-    }
-
-    // u,v are coords in tri, return if needed
-    let t = dot(&v0v2, &qvec) * inv_det;
-    if t<0.0 {
-        return None;
-    }
-    Some(t)
-}
-
-#[allow(dead_code)]
-fn intersect_late_out(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
-    // Möller-Trumbore algo
-
-    let v0v1 = v1 - v0;
-    let v0v2 = v2 - v0;
-    let pvec = cross(&ray.dir, &v0v2);
-    let det = dot(&v0v1, &pvec);
-    // ray and triangle are parallel if det is close to 0
-    if det.abs() < std::f32::EPSILON {
-        // switch to "if det < std::f32::EPSILON { return None };" for backface culling
-        return None;
-    }
-
-    let inv_det = 1.0 / det;
-
-    let tvec = &ray.pos - v0;
-    let u = dot(&tvec, &pvec) * inv_det;
-
-    let qvec = cross(&tvec, &v0v1);
-    let v = dot(&ray.dir, &qvec) * inv_det;
-
-    // u,v are coords in tri, return if needed
-    let t = dot(&v0v2, &qvec) * inv_det;
-
-
-    // dont merge re-order or break apart these if-clauses - it has a major performance impact!
-    if u < 0.0 || u > 1.0 { return None; }
-    if v < 0.0 || u + v > 1.0 { return None; }
-    if t<0.0 { return None; }
-
-    Some(t)
-}
-
-#[allow(dead_code)]
-fn intersect_later_out(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
-    // Möller-Trumbore algo
-
-    let v0v1 = v1 - v0;
-    let v0v2 = v2 - v0;
-    let pvec = cross(&ray.dir, &v0v2);
-    let det = dot(&v0v1, &pvec);
-    let tvec = &ray.pos - v0;
-    let qvec = cross(&tvec, &v0v1);
-
-    let u = dot(&tvec, &pvec);
-    let v = dot(&ray.dir, &qvec);
-    let t = dot(&v0v2, &qvec);
-
-    // ray and triangle are parallel if det is close to 0
-    if det.abs() < std::f32::EPSILON {
-        // switch to "if det < std::f32::EPSILON { return None };" for backface culling
-        return None;
-    }
-
-    let inv_det = 1.0 / det;
-    let u = u * inv_det;
-    let v = v * inv_det;
-    // u,v are coords in tri, return if needed
-    let t = t * inv_det;
-
-    if u < 0.0 || u > 1.0 {
-        return None;
-    }
-    if v < 0.0 || u + v > 1.0 {
-        return None;
-    }
-    if t<0.0 {
-        return None;
-    }
-
-    Some(t)
-}
 
 struct Hit {
     distance: f32,
@@ -211,7 +102,7 @@ impl RayTracer {
         for (geom_idx, geom) in scene.geometries.iter().enumerate() {
 
             let intersect_distances: Vec<Option<f32>> = geom.transformed_vertices.chunks(3)
-                .map( |tri_vertices| intersect_late_out(ray, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]))
+                .map( |tri_vertices| intersect::intersect_late_out(ray, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]))
                 .collect();
 
             for (vtx_idx, intersect_distance) in intersect_distances.iter().enumerate() {
@@ -259,7 +150,7 @@ impl RayTracer {
             let mut blocked = false;
             for geom in &scene.geometries {
                 for tri_vertices in geom.vertices.chunks(3) {
-                    if let Some(t) = intersect_later_out(&ray_to_light, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]) {
+                    if let Some(t) = intersect::intersect_later_out(&ray_to_light, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]) {
                         if t > 0.0001 && t < 1.0 {
                             blocked = true;
                             break;
