@@ -35,10 +35,25 @@ impl std::ops::AddAssign for RGB {
     }
 }
 
+impl std::ops::Add<RGB> for RGB {
+    type Output = RGB;
+    fn add(self, other: Self) -> RGB {
+        RGB::new(
+            self.r + other.r,
+            self.g + other.g,
+            self.b + other.b
+        )
+    }
+}
+
 #[rustfmt::skip] impl std::ops::Mul<f32> for &RGB { type Output = RGB; fn mul(self, other: f32) -> RGB { RGB::new(self.r * other, self.g * other, self.b * other) }}
 #[rustfmt::skip] impl std::ops::Mul<f32> for  RGB { type Output = RGB; fn mul(self, other: f32) -> RGB { RGB::new(self.r * other, self.g * other, self.b * other) }}
 #[rustfmt::skip] impl std::ops::Mul< RGB> for f32 { type Output = RGB; fn mul(self, other: RGB) -> RGB { RGB::new(self * other.r, self * other.g, self * other.b) }}
 #[rustfmt::skip] impl std::ops::Mul<&RGB> for f32 { type Output = RGB; fn mul(self, other: &RGB) -> RGB { RGB::new(self * other.r, self * other.g, self * other.b) }}
+#[rustfmt::skip] impl std::ops::Mul< RGB> for RGB { type Output = RGB; fn mul(self, other: RGB) -> RGB { RGB::new(self.r * other.r, self.g * other.g, self.b * other.b) }}
+#[rustfmt::skip] impl std::ops::Mul<&RGB> for RGB { type Output = RGB; fn mul(self, other: &RGB) -> RGB { RGB::new(self.r * other.r, self.g * other.g, self.b * other.b) }}
+#[rustfmt::skip] impl std::ops::Mul< RGB> for &RGB { type Output = RGB; fn mul(self, other: RGB) -> RGB { RGB::new(self.r * other.r, self.g * other.g, self.b * other.b) }}
+#[rustfmt::skip] impl std::ops::Mul<&RGB> for &RGB { type Output = RGB; fn mul(self, other: &RGB) -> RGB { RGB::new(self.r * other.r, self.g * other.g, self.b * other.b) }}
 
 
 #[derive(Debug, Copy, Clone, PartialEq)]

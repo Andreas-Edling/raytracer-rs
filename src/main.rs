@@ -48,7 +48,7 @@ fn main() -> Result<(), String> {
     let (shutdown_sender, shutdown_receiver) = std::sync::mpsc::channel();
     let mut fps = Fps::new();
     let scene = ColladaLoader::from_file("./data/4boxes.dae").map_err(|e| e.to_string())?;
-    let mut raytracer = raytracer::RayTracer::new(WIDTH, HEIGHT, scene);
+    let mut raytracer = raytracer::RayTracer::new(WIDTH, HEIGHT, scene.cameras[0].clone());
 
     // raytracer loop
     let raytracer_thread = std::thread::spawn({
@@ -58,7 +58,7 @@ fn main() -> Result<(), String> {
             let mut running = true;
             while running {
                 
-                let generated_frame = raytracer.trace_frame(); 
+                let generated_frame = raytracer.trace_frame(&scene); 
                 
                 let ldr_frame = generated_frame.iter()
                     .map(|pix| tonemap::simple_map(pix))
