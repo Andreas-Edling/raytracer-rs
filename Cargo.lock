@@ -297,6 +297,7 @@ dependencies = [
  "minifb 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parseval 0.1.0 (git+https://github.com/Andreas-Edling/parseval)",
  "rand 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "timing 0.1.0 (git+https://github.com/Andreas-Edling/timing)",
 ]
 
 [[package]]
@@ -364,6 +365,11 @@ dependencies = [
  "redox_syscall 0.1.56 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "timing"
+version = "0.1.0"
+source = "git+https://github.com/Andreas-Edling/timing#2491356b5ba6f270d61b0e8e9bc10c059a85859c"
 
 [[package]]
 name = "wasi"
@@ -445,6 +451,7 @@ dependencies = [
 "checksum semver 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1d7eb9ef2c18661902cc47e535f9bc51b78acd254da71d375c2f6720d9a40403"
 "checksum semver-parser 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 "checksum time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)" = "db8dcfca086c1143c9270ac42a2bbd8a7ee477b78ac8e45b19abfb0cbede4b6f"
+"checksum timing 0.1.0 (git+https://github.com/Andreas-Edling/timing)" = "<none>"
 "checksum wasi 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b89c3ce4ce14bdc6fb6beaf9ec7928ca331de5df7e5ea278375642a2f478570d"
 "checksum winapi 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)" = "8093091eeb260906a183e6ae1abdba2ef5ef2257a21801128899c3fc699229c6"
 "checksum winapi-i686-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"

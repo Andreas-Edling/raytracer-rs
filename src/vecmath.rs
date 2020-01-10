@@ -14,7 +14,7 @@ impl Ray {
 }
 
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct Vec3 {
     pub x: f32,
     pub y: f32,

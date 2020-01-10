@@ -12,3 +12,4 @@ rand = "0.7.2"
 minifb = "0.14.0"
 #parseval ={ path = "../../parseval"}
 parseval = { git = "https://github.com/Andreas-Edling/parseval" }
+timing = { git = "https://github.com/Andreas-Edling/timing" } 

@@ -1,7 +1,6 @@
 
 mod intersect;
-
-use rand::Rng;
+mod sample_generator;
 
 use crate::vecmath::{cross, dot, Vec3};
 
@@ -12,6 +11,9 @@ use crate::scene::{
     Ray,
 };
 
+use sample_generator::SampleGenerator;
+
+use timing::BenchMark;
 
 struct Hit {
     distance: f32,
@@ -28,6 +30,8 @@ pub struct RayTracer {
     width: usize,
     height: usize,
     pub camera: Camera,
+
+    sample_generator: sample_generator::SampleGenerator,
 }
 
 
@@ -37,29 +41,52 @@ impl RayTracer {
             width,
             height,
             camera,
+            sample_generator: SampleGenerator::new(),
         }
     }
 
     #[rustfmt::skip]
-    pub fn trace_frame(&mut self, scene: &Scene) -> Vec<RGB> {
+    pub fn trace_frame(&mut self, scene: &Scene, timer: &mut BenchMark) -> Vec<RGB> {
         let rays = {self.camera.get_rays()};
         let mut frame = Vec::with_capacity(self.width*self.height);
 
         for ray in rays {
+            timer.start("trace_primary_ray");
             let hit = Self::trace_ray(scene, ray);
+            timer.stop("trace_primary_ray");
 
             let color = match hit {
                 Some(ref hit) => {
+                    timer.start("calc_normal");
                     let normal = Self::calc_normal(scene, &hit);
+                    timer.stop("calc_normal");
+
+                    timer.start("shade");
                     let radiance = Self::shade(scene, ray, hit, &normal);
+                    timer.stop("shade");
                     
-                    const SUB_RAYS: u32 = 100;
+                    const SUB_RAYS: u32 = 10;
+                    let sample_gen_ref = &mut self.sample_generator;
                     let sub_radiance = (0..SUB_RAYS).map(|_|{
-                        let sub_ray = Self::randomize_reflection_ray(hit, ray, &normal);
-                        match Self::trace_ray(scene, &sub_ray) {
+                        timer.start("randomize_reflection_ray");
+                        let sub_ray = Self::randomize_reflection_ray(sample_gen_ref, hit, ray, &normal);
+                        timer.stop("randomize_reflection_ray");
+
+                        timer.start("trace_sub_ray");
+                        let sub_hit = Self::trace_ray(scene, &sub_ray);
+                        timer.stop("trace_sub_ray");
+            
+                        match  sub_hit {
                             Some(sub_hit) => {
+
+                                timer.start("calc_normal");
                                 let sub_normal = Self::calc_normal(scene, &sub_hit);
+                                timer.stop("calc_normal");
+
+                                timer.start("shade");
                                 let sub_radiance = Self::shade(scene, &sub_ray, &sub_hit, &sub_normal);
+                                timer.stop("shade");
+
                                 sub_radiance 
                             },
                             None => RGB::black(),
@@ -75,24 +102,19 @@ impl RayTracer {
         frame
     }
 
-    fn randomize_reflection_ray(hit: &Hit, ray: &Ray, normal: &Vec3) -> Ray {
-        let mut rng = rand::thread_rng();
+    fn randomize_reflection_ray(sample_generator: &mut SampleGenerator, hit: &Hit, ray: &Ray, normal: &Vec3) -> Ray {
+        
+        // get random direction on hemisphere
+        let mut random_dir = sample_generator.normalized_vec();
+        while dot(&random_dir, normal) <= 0.0 {
+            random_dir = sample_generator.normalized_vec();
+        }
 
+        // calc pos and offset slightly
         let hit_point = &ray.pos + hit.distance * &ray.dir;
+        let hit_point = hit_point + 0.00001*&random_dir;
 
-        let dir = loop {
-            let dir = Vec3::new(
-                rng.gen_range(-1.0, 1.0),
-                rng.gen_range(-1.0, 1.0),
-                rng.gen_range(-1.0, 1.0),
-            );
-            if dot(&dir, &dir) < 1.0 && dot(&dir, normal) > 0.0{
-                break dir;
-            }
-        };
-
-        let hit_point = hit_point + 0.00001*&dir;
-        Ray::new(hit_point, dir)
+        Ray::new(hit_point, random_dir)
     }
 
 

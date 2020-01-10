@@ -18,6 +18,9 @@ use scene::loaders::{
     colladaloader::ColladaLoader,
 };
 
+use timing::BenchMark;
+
+
 #[derive(Debug, Clone, Copy)]
 enum Event {
     KeyDown(Key),
@@ -33,7 +36,6 @@ fn generate_events(window: &Window) -> Vec<Event> {
 
     events
 }
-
 
 fn main() -> Result<(), String> {
 
@@ -55,21 +57,27 @@ fn main() -> Result<(), String> {
         let frame = Arc::clone(&frame);
         move || {
 
+            let mut timer = BenchMark::new();
+
             let mut running = true;
             while running {
                 
-                let generated_frame = raytracer.trace_frame(&scene); 
+                let generated_frame = raytracer.trace_frame(&scene, &mut timer); 
                 
+                timer.start("frame_to_u32");
                 let ldr_frame = generated_frame.iter()
-                    .map(|pix| tonemap::simple_map(pix))
-                    .map(|pix| scene::color::RGBA::from_rgb(pix, 1.0).to_u32())
+                    .map( |pix| tonemap::simple_map(pix) )
+                    .map( |pix| scene::color::RGBA::from_rgb(pix, 1.0).to_u32() )
                     .collect();
+                timer.stop("frame_to_u32");
 
                 // lock & copy frame
+                timer.start("lock_&_copy");
                 {
                     let mut frame_w = frame.write().unwrap();
-                    *frame_w = ldr_frame; 
+                    *frame_w = ldr_frame;
                 }
+                timer.stop("lock_&_copy");
 
                 // notify main thread
                 copy_frame_sender.send(()).expect("channel copy_frame_sender failed on send");
@@ -103,6 +111,7 @@ fn main() -> Result<(), String> {
                     running = false;
                 }
             }
+            println!("{}",timer);
         }
     });
     
