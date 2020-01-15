@@ -45,56 +45,40 @@ impl RayTracer {
         }
     }
 
+    fn compute_radiance(scene: &Scene, ray: &Ray, hit: &Hit, sample_generator: &mut SampleGenerator, recursions: u8) -> RGB {
+        let normal = Self::calc_normal(scene, &hit);
+        let radiance = Self::shade(scene, ray, hit, &normal);
+        if recursions < 1 {
+            return radiance;
+        }
+
+        const SUB_RAYS: u32 = 100;
+        let sub_rays = SUB_RAYS * recursions as u32; 
+
+        let sub_radiance = (0..sub_rays).map(|_|{
+            let sub_ray = Self::randomize_reflection_ray(sample_generator, hit, ray, &normal);
+
+            let sub_hit = Self::intersect_ray(scene, &sub_ray);
+
+            match sub_hit {
+                Some(sub_hit) => Self::compute_radiance(scene, &sub_ray, &sub_hit, sample_generator, recursions-1),
+                None => RGB::black(),
+            }
+        }).fold(RGB::black(), |sum, x| sum + x) * (1.0f32 / SUB_RAYS as f32);
+        radiance + sub_radiance 
+    }
+
+
     #[rustfmt::skip]
-    pub fn trace_frame(&mut self, scene: &Scene, timer: &mut BenchMark) -> Vec<RGB> {
+    pub fn trace_frame(&mut self, scene: &Scene, _timer: &mut BenchMark) -> Vec<RGB> {
         let rays = {self.camera.get_rays()};
         let mut frame = Vec::with_capacity(self.width*self.height);
 
         for ray in rays {
-            timer.start("trace_primary_ray");
-            let hit = Self::trace_ray(scene, ray);
-            timer.stop("trace_primary_ray");
-
+            let hit = Self::intersect_ray(scene, ray);
             let color = match hit {
-                Some(ref hit) => {
-                    timer.start("calc_normal");
-                    let normal = Self::calc_normal(scene, &hit);
-                    timer.stop("calc_normal");
-
-                    timer.start("shade");
-                    let radiance = Self::shade(scene, ray, hit, &normal);
-                    timer.stop("shade");
-                    
-                    const SUB_RAYS: u32 = 10;
-                    let sample_gen_ref = &mut self.sample_generator;
-                    let sub_radiance = (0..SUB_RAYS).map(|_|{
-                        timer.start("randomize_reflection_ray");
-                        let sub_ray = Self::randomize_reflection_ray(sample_gen_ref, hit, ray, &normal);
-                        timer.stop("randomize_reflection_ray");
-
-                        timer.start("trace_sub_ray");
-                        let sub_hit = Self::trace_ray(scene, &sub_ray);
-                        timer.stop("trace_sub_ray");
-            
-                        match  sub_hit {
-                            Some(sub_hit) => {
-
-                                timer.start("calc_normal");
-                                let sub_normal = Self::calc_normal(scene, &sub_hit);
-                                timer.stop("calc_normal");
-
-                                timer.start("shade");
-                                let sub_radiance = Self::shade(scene, &sub_ray, &sub_hit, &sub_normal);
-                                timer.stop("shade");
-
-                                sub_radiance 
-                            },
-                            None => RGB::black(),
-                        }
-                    }).fold(RGB::black(), |sum, x| sum + x) * (1.0f32 / SUB_RAYS as f32);
-                    radiance + sub_radiance 
-                },
-                None => RGB::black()
+                None => RGB::black(),
+                Some(ref hit) => Self::compute_radiance(scene, ray, hit, &mut self.sample_generator, 2),
             };
             frame.push(color);
         }
@@ -118,7 +102,7 @@ impl RayTracer {
     }
 
 
-    fn trace_ray(scene: &Scene, ray: &Ray) -> Option<Hit> {
+    fn intersect_ray(scene: &Scene, ray: &Ray) -> Option<Hit> {
         let mut closest_hit = None;
 
         for (geom_idx, geom) in scene.geometries.iter().enumerate() {
