@@ -77,10 +77,10 @@ pub fn dot(v0: &Vec3, v1: &Vec3) -> f32 {
 
 #[rustfmt::skip]
 pub fn cross(v0: &Vec3, v1: &Vec3) -> Vec3 {
-    Vec3::new( 
-         v0.y*v1.z - v0.z*v1.y, 
-         v0.z*v1.x - v0.x*v1.z, 
-         v0.x*v1.y - v0.y*v1.x, 
+    Vec3::new(
+        v0.y*v1.z - v0.z*v1.y,
+        v0.z*v1.x - v0.x*v1.z,
+        v0.x*v1.y - v0.y*v1.x,
     )
 }
 
