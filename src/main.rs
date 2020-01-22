@@ -61,8 +61,8 @@ fn main() -> Result<(), String> {
 
             let mut running = true;
             while running {
-                
-                let generated_frame = raytracer.trace_frame(&scene, &mut timer); 
+                raytracer.trace_frame_additive(&scene, &mut timer);
+                let generated_frame = raytracer.film.get_film();
                 
                 timer.start("frame_to_u32");
                 let ldr_frame = generated_frame.iter()

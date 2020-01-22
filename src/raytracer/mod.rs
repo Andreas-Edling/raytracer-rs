@@ -1,6 +1,7 @@
 
 mod intersect;
 mod sample_generator;
+mod film;
 
 use crate::vecmath::{cross, dot, Vec3};
 
@@ -12,7 +13,7 @@ use crate::scene::{
 };
 
 use sample_generator::SampleGenerator;
-
+use film::Film;
 use timing::BenchMark;
 
 struct Hit {
@@ -32,6 +33,7 @@ pub struct RayTracer {
     pub camera: Camera,
 
     sample_generator: sample_generator::SampleGenerator,
+    pub film: Film,
 }
 
 
@@ -42,16 +44,17 @@ impl RayTracer {
             height,
             camera,
             sample_generator: SampleGenerator::new(),
+            film: Film::new(width * height),
         }
     }
 
-    #[rustfmt::skip]
+    #[allow(dead_code)]
     pub fn trace_frame(&mut self, scene: &Scene, _timer: &mut BenchMark) -> Vec<RGB> {
         let rays = {self.camera.get_rays()};
         let mut frame = Vec::with_capacity(self.width*self.height);
 
-        const RECURSIONS: u8 = 2;
-        const SUB_SPREAD: u32 = 10;
+        const RECURSIONS: u8 = 1;
+        const SUB_SPREAD: u32 = 1;
 
         for ray in rays {
             let hit = intersect_ray(scene, ray);
@@ -63,6 +66,23 @@ impl RayTracer {
         }
 
         frame
+    }
+
+    pub fn trace_frame_additive(&mut self, scene: &Scene, _timer: &mut BenchMark) {
+        let rays = {self.camera.get_rays()};
+
+        const RECURSIONS: u8 = 2;
+        const SUB_SPREAD: u32 = 1;
+
+        for (ray, (film_samples, film_pixel)) in rays.iter().zip(self.film.iter_mut()) {
+            let hit = intersect_ray(scene, ray);
+            let color = match hit {
+                None => RGB::black(),
+                Some(ref hit) => compute_radiance(scene, ray, hit, &mut self.sample_generator, RECURSIONS, SUB_SPREAD),
+            };
+            *film_samples += 1;
+            *film_pixel += color;
+        }
     }
 }
  
@@ -93,9 +113,9 @@ fn compute_radiance(scene: &Scene, ray: &Ray, hit: &Hit, sample_generator: &mut 
 fn randomize_reflection_ray(sample_generator: &mut SampleGenerator, hit: &Hit, ray: &Ray, normal: &Vec3) -> Ray {
     
     // get random direction on hemisphere
-    let mut random_dir = sample_generator.normalized_vec();
+    let mut random_dir = sample_generator.normalized_vec_pseudo();
     while dot(&random_dir, normal) <= 0.0 {
-        random_dir = sample_generator.normalized_vec();
+        random_dir = sample_generator.normalized_vec_lookup();
     }
 
     // calc pos and offset slightly
