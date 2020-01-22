@@ -1,11 +1,10 @@
-
-pub mod loaders;
-pub mod color;
 pub mod camera;
+pub mod color;
+pub mod loaders;
 
 pub use crate::vecmath::*;
-use color::{RGB};
 use camera::Camera;
+use color::RGB;
 
 pub type Vertex = Vec3;
 
@@ -21,19 +20,22 @@ impl Light {
     }
 }
 
-
 pub struct Scene {
     pub geometries: Vec<Geometry>,
     pub lights: Vec<Light>,
-    pub cameras: Vec<Camera>
+    pub cameras: Vec<Camera>,
 }
 
 impl Scene {
     #[allow(dead_code)]
     pub fn apply_transform(&mut self, mat: &Matrix) {
         for geom in self.geometries.iter_mut() {
-            for (vtx, transformed_vtx) in geom.vertices.iter().zip(geom.transformed_vertices.iter_mut()) {
-                    *transformed_vtx = Vec3::from(mat * Vec4::from_vec3(vtx));
+            for (vtx, transformed_vtx) in geom
+                .vertices
+                .iter()
+                .zip(geom.transformed_vertices.iter_mut())
+            {
+                *transformed_vtx = Vec3::from(mat * Vec4::from_vec3(vtx));
             }
         }
     }
@@ -48,7 +50,11 @@ pub struct Geometry {
 impl Geometry {
     pub fn new(vertices: Vec<Vertex>, material: Material) -> Self {
         let transformed_vertices = vertices.clone();
-        Geometry{ vertices, transformed_vertices, material }
+        Geometry {
+            vertices,
+            transformed_vertices,
+            material,
+        }
     }
 }
 

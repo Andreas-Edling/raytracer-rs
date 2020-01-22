@@ -1,7 +1,6 @@
+use crate::vecmath::{Matrix, Ray, Vec3, Vec4};
 
-use crate::vecmath::{Ray, Vec3, Matrix, Vec4};
-
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct Camera {
     rays: Vec<Ray>,
     transformed_rays: Vec<Ray>,
@@ -18,13 +17,18 @@ impl Camera {
     }
 
     // Note - only rotation and position is expected/used in matrix, no perspective!
-    pub fn from_orientation_matrix(width: usize, height: usize, orientation_matrix: &Matrix, fov_deg: f32) -> Self {
+    pub fn from_orientation_matrix(
+        width: usize,
+        height: usize,
+        orientation_matrix: &Matrix,
+        fov_deg: f32,
+    ) -> Self {
         let rotation_matrix = {
             let mut rotation_matrix = *orientation_matrix;
             rotation_matrix[3] = 0.0;
             rotation_matrix[7] = 0.0;
             rotation_matrix[11] = 0.0;
-            
+
             rotation_matrix[12] = 0.0;
             rotation_matrix[13] = 0.0;
             rotation_matrix[14] = 0.0;
@@ -35,14 +39,14 @@ impl Camera {
         let mut rays = Vec::<Ray>::with_capacity(width * height);
 
         let fov = fov_deg * std::f32::consts::PI / 180.0;
-        let half_fov = 0.5*fov;
+        let half_fov = 0.5 * fov;
         let max_x = 1.0 * half_fov.tan();
         let max_y = 1.0 * half_fov.tan();
 
         for y in 0..height {
-            let dir_y = -max_y + 2.0*max_y*(y as f32 / height as f32);
+            let dir_y = -max_y + 2.0 * max_y * (y as f32 / height as f32);
             for x in 0..width {
-                let dir_x = -max_x + 2.0*max_x*(x as f32 / width as f32);
+                let dir_x = -max_x + 2.0 * max_x * (x as f32 / width as f32);
 
                 let pos = Vec3::new(x as f32 / width as f32, 1.0 - y as f32 / height as f32, 0.0);
                 let dir = Vec3::new(dir_x, -dir_y, 1.0);
@@ -52,7 +56,11 @@ impl Camera {
                 rays.push(Ray::new(pos.into(), dir.into()));
             }
         }
-        println!("middle ray {:?} {:?}",rays[640*320+160].pos, rays[640*320+160].dir);
+        println!(
+            "middle ray {:?} {:?}",
+            rays[640 * 320 + 160].pos,
+            rays[640 * 320 + 160].dir
+        );
         let transformed_rays = rays.clone();
 
         Camera {
@@ -82,7 +90,7 @@ impl Camera {
         self.pos.z += z;
     }
 
-    pub fn get_rays(& mut self) -> &[Ray] {
+    pub fn get_rays(&mut self) -> &[Ray] {
         if self.orientation_changed {
             let matrix = Matrix::rot_x(self.x_angle_radians);
             let matrix = matrix * Matrix::rot_y(self.y_angle_radians);

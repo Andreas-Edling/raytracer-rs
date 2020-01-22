@@ -1,6 +1,5 @@
-
+use crate::vecmath::{dot, Vec3};
 use rand::Rng;
-use crate::vecmath::{Vec3, dot};
 
 type SampleIdx = u16;
 const SAMPLE_MAX: SampleIdx = std::u16::MAX;
@@ -32,7 +31,7 @@ impl SampleGenerator {
     pub fn normalized_vec_pseudo(&mut self) -> Vec3 {
         let mut rng = rand::thread_rng(); // TODO move this to new
 
-        self.sample_idx = rng.gen_range(0, NUM_SAMPLES-1) as u16;
+        self.sample_idx = rng.gen_range(0, NUM_SAMPLES - 1) as u16;
         self.normalized_vecs[self.sample_idx as usize]
     }
 

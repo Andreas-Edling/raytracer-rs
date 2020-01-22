@@ -1,6 +1,5 @@
 use crate::scene::color::RGB;
 
-
 #[allow(dead_code)]
 pub fn simple_map(color: &RGB) -> RGB {
     RGB::new(
@@ -22,7 +21,7 @@ pub fn luminance_simple_map(color: &RGB) -> RGB {
 
 #[allow(dead_code)]
 pub fn gamma_map(color: &RGB) -> RGB {
-    const A: f32 = 0.5;     // [0..inf)
+    const A: f32 = 0.5; // [0..inf)
     const GAMMA: f32 = 0.5; // [0..1]
 
     let mut xyz = to_xyz(color);
@@ -33,24 +32,21 @@ pub fn gamma_map(color: &RGB) -> RGB {
     to_rgb(&xyz)
 }
 
-
-
 type XYZ = RGB;
 
 fn to_xyz(color: &RGB) -> XYZ {
     XYZ::new(
-        0.4124564*color.r + 0.3575761*color.g + 0.1804375*color.b,
-        0.2126729*color.r + 0.7151522*color.g + 0.0721750*color.b,
-        0.0193339*color.r + 0.1191920*color.g + 0.9503041*color.b,
+        0.4124564 * color.r + 0.3575761 * color.g + 0.1804375 * color.b,
+        0.2126729 * color.r + 0.7151522 * color.g + 0.0721750 * color.b,
+        0.0193339 * color.r + 0.1191920 * color.g + 0.9503041 * color.b,
     )
 }
 
 fn to_rgb(color: &XYZ) -> RGB {
     RGB::new(
-        3.2404542*color.r + -1.5371385*color.g + -0.4985314*color.b,
-        -0.9692660*color.r + 1.8760108*color.g +  0.0415560*color.b,
-        0.0556434*color.r + -0.2040259*color.g +  1.0572252*color.b,
-
+        3.2404542 * color.r + -1.5371385 * color.g + -0.4985314 * color.b,
+        -0.9692660 * color.r + 1.8760108 * color.g + 0.0415560 * color.b,
+        0.0556434 * color.r + -0.2040259 * color.g + 1.0572252 * color.b,
     )
 }
 
@@ -67,10 +63,8 @@ mod tests {
         let diff_r = (rgb.r.abs() - transformed.r).abs();
         let diff_g = (rgb.g.abs() - transformed.g).abs();
         let diff_b = (rgb.b.abs() - transformed.b).abs();
-        assert!( diff_r <= f32::EPSILON);
-        assert!( diff_g <= f32::EPSILON);
-        assert!( diff_b <= f32::EPSILON);
+        assert!(diff_r <= f32::EPSILON);
+        assert!(diff_g <= f32::EPSILON);
+        assert!(diff_b <= f32::EPSILON);
     }
 }
-
-

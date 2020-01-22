@@ -1,5 +1,5 @@
+use crate::scene::{Ray, Vertex};
 use crate::vecmath::{cross, dot};
-use crate::scene::{Vertex, Ray};
 
 #[allow(dead_code)]
 pub fn intersect(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
@@ -31,7 +31,7 @@ pub fn intersect(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32
 
     // u,v are coords in tri, return if needed
     let t = dot(&v0v2, &qvec) * inv_det;
-    if t<0.0 {
+    if t < 0.0 {
         return None;
     }
     Some(t)
@@ -62,11 +62,16 @@ pub fn intersect_late_out(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> O
     // u,v are coords in tri, return if needed
     let t = dot(&v0v2, &qvec) * inv_det;
 
-
     // dont merge re-order or break apart these if-clauses - it has a major performance impact!
-    if u < 0.0 || u > 1.0 { return None; }
-    if v < 0.0 || u + v > 1.0 { return None; }
-    if t<0.0 { return None; }
+    if u < 0.0 || u > 1.0 {
+        return None;
+    }
+    if v < 0.0 || u + v > 1.0 {
+        return None;
+    }
+    if t < 0.0 {
+        return None;
+    }
 
     Some(t)
 }
@@ -104,7 +109,7 @@ pub fn intersect_later_out(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> 
     if v < 0.0 || u + v > 1.0 {
         return None;
     }
-    if t<0.0 {
+    if t < 0.0 {
         return None;
     }
 

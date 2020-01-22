@@ -1,4 +1,3 @@
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ray {
     pub pos: Vec3,
@@ -6,13 +5,9 @@ pub struct Ray {
 }
 impl Ray {
     pub const fn new(pos: Vec3, dir: Vec3) -> Self {
-        Ray {
-            pos,
-            dir,
-        }
+        Ray { pos, dir }
     }
 }
-
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub struct Vec3 {
@@ -26,7 +21,7 @@ impl Vec3 {
     }
 
     pub fn normalized(&self) -> Vec3 {
-        let len = (self.x*self.x + self.y*self.y + self.z*self.z).sqrt();
+        let len = (self.x * self.x + self.y * self.y + self.z * self.z).sqrt();
         Vec3::new(self.x / len, self.y / len, self.z / len)
     }
 }
@@ -53,8 +48,6 @@ impl From<Vec4> for Vec3 {
 #[rustfmt::skip] impl std::ops::Mul<&Vec3> for f32 { type Output = Vec3; fn mul(self, other: &Vec3) -> Vec3 { Vec3::new(self * other.x, self * other.y, self * other.z) }}
 
 #[rustfmt::skip] impl std::ops::Neg for Vec3 { type Output = Vec3; fn neg(self) -> Self::Output { Vec3::new(-self.x, -self.y, -self.z) }}
-
-
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Vec4 {
@@ -96,19 +89,19 @@ pub struct Matrix {
     e: [f32; 16],
 }
 impl Matrix {
-    pub fn new(elems: &[f32;16]) -> Self {
+    pub fn new(elems: &[f32; 16]) -> Self {
         Matrix { e: *elems }
     }
 
     pub fn from_slice(elems: &[f32]) -> Option<Self> {
-        if elems.len()<16 {
+        if elems.len() < 16 {
             return None;
         }
 
         let mut array = [0.0; 16];
         let elems = &elems[..16];
-        array.copy_from_slice(elems); 
-        Some(Matrix{ e: array })
+        array.copy_from_slice(elems);
+        Some(Matrix { e: array })
     }
 
     pub fn ident() -> Self {
@@ -182,11 +175,25 @@ impl std::ops::IndexMut<usize> for Matrix {
 
 impl std::fmt::Display for Matrix {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{} {} {} {}\n{} {} {} {}\n{} {} {} {}\n{} {} {} {}", 
-            self.e[0],self.e[1],self.e[2],self.e[3], 
-            self.e[4],self.e[5],self.e[6],self.e[7], 
-            self.e[8],self.e[9],self.e[10],self.e[11], 
-            self.e[12],self.e[13],self.e[14],self.e[15], 
+        write!(
+            f,
+            "{} {} {} {}\n{} {} {} {}\n{} {} {} {}\n{} {} {} {}",
+            self.e[0],
+            self.e[1],
+            self.e[2],
+            self.e[3],
+            self.e[4],
+            self.e[5],
+            self.e[6],
+            self.e[7],
+            self.e[8],
+            self.e[9],
+            self.e[10],
+            self.e[11],
+            self.e[12],
+            self.e[13],
+            self.e[14],
+            self.e[15],
         )
     }
 }

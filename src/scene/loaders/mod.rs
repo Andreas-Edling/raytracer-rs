@@ -1,18 +1,14 @@
 pub mod boxloader;
 pub mod colladaloader;
 
-use std::{
-    fmt,
-    error,
-};
 use super::Scene;
+use std::{error, fmt};
 
 pub trait SceneLoader {
     fn from_str(input: &str) -> Result<Scene, SceneLoadError>;
     fn from_file<P: AsRef<std::path::Path>>(path: P) -> Result<Scene, SceneLoadError>;
     fn load() -> Result<Scene, SceneLoadError>;
 }
-
 
 #[derive(Debug)]
 pub enum SceneLoadError {
@@ -30,9 +26,9 @@ impl From<std::io::Error> for SceneLoadError {
 impl fmt::Display for SceneLoadError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SceneLoadError::ColladaLoader(e) => write!(f,"{}",e.to_string()),
-            SceneLoadError::Io(e) => write!(f,"{}",e.to_string()),
-            SceneLoadError::BoxLoader(s) => write!(f,"{}",s),
+            SceneLoadError::ColladaLoader(e) => write!(f, "{}", e.to_string()),
+            SceneLoadError::Io(e) => write!(f, "{}", e.to_string()),
+            SceneLoadError::BoxLoader(s) => write!(f, "{}", s),
         }
     }
 }

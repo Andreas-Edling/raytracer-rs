@@ -6,35 +6,36 @@ pub struct Film {
     num_samples: Vec<u32>,
 }
 
-
 impl Film {
     pub fn new(size: usize) -> Self {
         let pixels = vec![RGB::black(); size];
         let num_samples = vec![0; size];
         Film {
             size,
-            pixels, 
-            num_samples
+            pixels,
+            num_samples,
         }
     }
 
     pub fn iter_mut<'a>(&'a mut self) -> FilmIterMut<'a> {
-        FilmIterMut{
+        FilmIterMut {
             pixel_iter: self.pixels.iter_mut(),
             num_samples_iter: self.num_samples.iter_mut(),
         }
     }
 
     pub fn get_film(&self) -> Vec<RGB> {
-        self.pixels.iter().zip(self.num_samples.iter()).map(|(rgb_sum, num_samples)|{
-            rgb_sum * (1.0 / *num_samples as f32)
-        }).collect()
+        self.pixels
+            .iter()
+            .zip(self.num_samples.iter())
+            .map(|(rgb_sum, num_samples)| rgb_sum * (1.0 / *num_samples as f32))
+            .collect()
     }
 }
 
 pub struct FilmIterMut<'a> {
     pixel_iter: std::slice::IterMut<'a, RGB>,
-    num_samples_iter: std::slice::IterMut<'a, u32>, 
+    num_samples_iter: std::slice::IterMut<'a, u32>,
 }
 
 impl<'a> Iterator for FilmIterMut<'a> {
@@ -42,7 +43,7 @@ impl<'a> Iterator for FilmIterMut<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match (self.num_samples_iter.next(), self.pixel_iter.next()) {
-            (Some(a), Some(b)) => Some((a,b)),
+            (Some(a), Some(b)) => Some((a, b)),
             (Some(_), None) => None,
             (None, Some(_)) => None,
             (None, None) => None,
@@ -59,7 +60,7 @@ mod tests {
         let mut film = Film::new(100);
         let mut iter = film.iter_mut();
         for (count, rgb) in film.iter_mut() {
-            *count +=10;
+            *count += 10;
         }
 
         for (count, rgb) in film.iter_mut() {

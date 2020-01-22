@@ -1,28 +1,21 @@
+pub use super::{SceneLoadError, SceneLoader};
 
-pub use super::{SceneLoader, SceneLoadError};
-
-use crate::scene::{
-    Scene, 
-    Vertex,
-    Geometry,
-    Material,
-    color::RGB,
-    Light,
-    camera::Camera,
-    Vec3,
-};
+use crate::scene::{camera::Camera, color::RGB, Geometry, Light, Material, Scene, Vec3, Vertex};
 
 #[allow(dead_code)]
 pub struct BoxLoader;
 
 impl SceneLoader for BoxLoader {
     fn from_str(_s: &str) -> Result<Scene, SceneLoadError> {
-        Err(SceneLoadError::BoxLoader("not implemented for BoxLoader".to_string()))
+        Err(SceneLoadError::BoxLoader(
+            "not implemented for BoxLoader".to_string(),
+        ))
     }
 
-    fn from_file<P: AsRef<std::path::Path>>(_path: P) -> Result<Scene, SceneLoadError>
-    {
-        Err(SceneLoadError::BoxLoader("not implemented for BoxLoader".to_string()))
+    fn from_file<P: AsRef<std::path::Path>>(_path: P) -> Result<Scene, SceneLoadError> {
+        Err(SceneLoadError::BoxLoader(
+            "not implemented for BoxLoader".to_string(),
+        ))
     }
 
     fn load() -> Result<Scene, SceneLoadError> {
@@ -79,11 +72,15 @@ impl SceneLoader for BoxLoader {
         let geometries = vec![Geometry::new(vertices, Material::default())];
 
         let lights = vec![Light::new(
-            Vec3::new(RIGHT*3.0, UP*2.0, NEAR*2.0),
+            Vec3::new(RIGHT * 3.0, UP * 2.0, NEAR * 2.0),
             RGB::new(1.0, 1.0, 1.0),
         )];
 
-        let cameras = vec![Camera::new(640,480, &Vec3::new(0.0, 0.0, 0.0), 60.0)];
-        Ok( Scene { geometries, lights, cameras } )
+        let cameras = vec![Camera::new(640, 480, &Vec3::new(0.0, 0.0, 0.0), 60.0)];
+        Ok(Scene {
+            geometries,
+            lights,
+            cameras,
+        })
     }
 }
