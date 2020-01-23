@@ -46,7 +46,7 @@ fn main() -> Result<(), String> {
     ) = std::sync::mpsc::channel();
     let (shutdown_sender, shutdown_receiver) = std::sync::mpsc::channel();
     let mut fps = Fps::new();
-    let scene = ColladaLoader::from_file("./data/4boxes.dae").map_err(|e| e.to_string())?;
+    let scene = ColladaLoader::from_file("./data/ico2.dae").map_err(|e| e.to_string())?;
     let mut raytracer = raytracer::RayTracer::new(WIDTH, HEIGHT, scene.cameras[0].clone());
 
     // raytracer loop
@@ -90,16 +90,46 @@ fn main() -> Result<(), String> {
                     for event in events {
                         match event {
                             Event::KeyDown(key) => match key {
-                                Key::Left => raytracer.camera.move_rel(0.1, 0.0, 0.0),
-                                Key::Right => raytracer.camera.move_rel(-0.1, 0.0, 0.0),
-                                Key::Up => raytracer.camera.move_rel(0.0, 0.1, 0.0),
-                                Key::Down => raytracer.camera.move_rel(0.0, -0.1, 0.0),
-                                Key::Comma => raytracer.camera.move_rel(0.0, 0.0, 0.1),
-                                Key::Period => raytracer.camera.move_rel(0.0, 0.0, -0.1),
-                                Key::A => raytracer.camera.add_y_angle(0.01),
-                                Key::D => raytracer.camera.add_y_angle(-0.01),
-                                Key::W => raytracer.camera.add_x_angle(0.01),
-                                Key::S => raytracer.camera.add_x_angle(-0.01),
+                                Key::Left => {
+                                    raytracer.camera.move_rel(0.1, 0.0, 0.0);
+                                    raytracer.film.clear();
+                                }
+                                Key::Right => {
+                                    raytracer.camera.move_rel(-0.1, 0.0, 0.0);
+                                    raytracer.film.clear();
+                                }
+                                Key::Up => {
+                                    raytracer.camera.move_rel(0.0, 0.1, 0.0);
+                                    raytracer.film.clear();
+                                }
+                                Key::Down => {
+                                    raytracer.camera.move_rel(0.0, -0.1, 0.0);
+                                    raytracer.film.clear();
+                                }
+                                Key::Comma => {
+                                    raytracer.camera.move_rel(0.0, 0.0, 0.1);
+                                    raytracer.film.clear();
+                                }
+                                Key::Period => {
+                                    raytracer.camera.move_rel(0.0, 0.0, -0.1);
+                                    raytracer.film.clear();
+                                }
+                                Key::A => {
+                                    raytracer.camera.add_y_angle(0.01);
+                                    raytracer.film.clear();
+                                }
+                                Key::D => {
+                                    raytracer.camera.add_y_angle(-0.01);
+                                    raytracer.film.clear();
+                                }
+                                Key::W => {
+                                    raytracer.camera.add_x_angle(0.01);
+                                    raytracer.film.clear();
+                                }
+                                Key::S => {
+                                    raytracer.camera.add_x_angle(-0.01);
+                                    raytracer.film.clear();
+                                }
                                 _ => (),
                             },
                         }

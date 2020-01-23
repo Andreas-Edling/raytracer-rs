@@ -76,7 +76,7 @@ impl RayTracer {
         let rays = { self.camera.get_rays() };
 
         const RECURSIONS: u8 = 2;
-        const SUB_SPREAD: u32 = 1;
+        const SUB_SPREAD: u32 = 5;
 
         for (ray, (film_samples, film_pixel)) in rays.iter().zip(self.film.iter_mut()) {
             let hit = intersect_ray(scene, ray);

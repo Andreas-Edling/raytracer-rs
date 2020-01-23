@@ -17,6 +17,16 @@ impl Film {
         }
     }
 
+    pub fn clear(&mut self) {
+        for p in self.pixels.iter_mut() {
+            *p = RGB::black();
+        }
+        for s in self.num_samples.iter_mut() {
+            *s = 0;
+        }
+
+    }
+
     pub fn iter_mut<'a>(&'a mut self) -> FilmIterMut<'a> {
         FilmIterMut {
             pixel_iter: self.pixels.iter_mut(),
