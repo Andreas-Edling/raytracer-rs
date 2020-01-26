@@ -47,7 +47,7 @@ impl RayTracer {
 
     #[allow(dead_code)]
     pub fn trace_frame(&mut self, scene: &Scene, _timer: &mut BenchMark) -> Vec<RGB> {
-        let rays = { self.camera.get_rays() };
+        let rays = self.camera.get_jittered_rays();
         let mut frame = Vec::with_capacity(self.width * self.height);
 
         const RECURSIONS: u8 = 1;
@@ -73,10 +73,10 @@ impl RayTracer {
     }
 
     pub fn trace_frame_additive(&mut self, scene: &Scene, _timer: &mut BenchMark) {
-        let rays = { self.camera.get_rays() };
+        let rays = self.camera.get_jittered_rays();
 
         const RECURSIONS: u8 = 2;
-        const SUB_SPREAD: u32 = 5;
+        const SUB_SPREAD: u32 = 1;
 
         for (ray, (film_samples, film_pixel)) in rays.iter().zip(self.film.iter_mut()) {
             let hit = intersect_ray(scene, ray);

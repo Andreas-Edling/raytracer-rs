@@ -1,3 +1,5 @@
+use rand::Rng;
+
 use crate::vecmath::{Matrix, Ray, Vec3, Vec4};
 
 #[derive(Debug, Clone)]
@@ -8,6 +10,9 @@ pub struct Camera {
     y_angle_radians: f32,
     pos: Vec3,
     orientation_changed: bool,
+    width: usize,
+    height: usize,
+    half_fov: f32,
 }
 
 impl Camera {
@@ -56,11 +61,6 @@ impl Camera {
                 rays.push(Ray::new(pos.into(), dir.into()));
             }
         }
-        println!(
-            "middle ray {:?} {:?}",
-            rays[640 * 320 + 160].pos,
-            rays[640 * 320 + 160].dir
-        );
         let transformed_rays = rays.clone();
 
         Camera {
@@ -70,6 +70,9 @@ impl Camera {
             y_angle_radians: 0.0,
             pos: Vec3::new(0.0, 0.0, 0.0), //pos: Vec3::new(-0.5, -0.5, -10.0),
             orientation_changed: true,
+            width,
+            height,
+            half_fov,
         }
     }
 
@@ -90,6 +93,7 @@ impl Camera {
         self.pos.z += z;
     }
 
+    #[allow(dead_code)]
     pub fn get_rays(&mut self) -> &[Ray] {
         if self.orientation_changed {
             let matrix = Matrix::rot_x(self.x_angle_radians);
@@ -103,6 +107,24 @@ impl Camera {
                 self.transformed_rays[i] = Ray::new(pos.into(), dir.into());
             }
             self.orientation_changed = false;
+        }
+        &self.transformed_rays
+    }
+
+    pub fn get_jittered_rays(&mut self) -> &[Ray] {
+        let mut rng = rand::thread_rng();
+        let matrix = Matrix::rot_x(self.x_angle_radians);
+        let matrix = matrix * Matrix::rot_y(self.y_angle_radians);
+        let pos_matrix = matrix * Matrix::translate(&self.pos);
+
+        for (i, ray) in self.rays.iter().enumerate() {
+            let pos = pos_matrix * Vec4::from_vec3(&ray.pos);
+            let mut dir = ray.dir.clone();
+            dir.x += rng.gen_range(0.0, 1.0) / self.width as f32;
+            dir.y += rng.gen_range(0.0, 1.0) / self.height as f32;
+            let mut dir = matrix * Vec4::from_vec3(&dir);
+            dir.w = 1.0;
+            self.transformed_rays[i] = Ray::new(pos.into(), dir.into());
         }
         &self.transformed_rays
     }

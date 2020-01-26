@@ -1,7 +1,6 @@
 use crate::scene::color::RGB;
 
 pub struct Film {
-    size: usize,
     pixels: Vec<RGB>,
     num_samples: Vec<u32>,
 }
@@ -11,7 +10,6 @@ impl Film {
         let pixels = vec![RGB::black(); size];
         let num_samples = vec![0; size];
         Film {
-            size,
             pixels,
             num_samples,
         }
