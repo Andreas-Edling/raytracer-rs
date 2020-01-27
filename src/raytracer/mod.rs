@@ -45,46 +45,22 @@ impl RayTracer {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn trace_frame(&mut self, scene: &Scene, _timer: &mut BenchMark) -> Vec<RGB> {
-        let rays = self.camera.get_jittered_rays();
-        let mut frame = Vec::with_capacity(self.width * self.height);
-
-        const RECURSIONS: u8 = 1;
-        const SUB_SPREAD: u32 = 1;
-
-        for ray in rays {
-            let hit = intersect_ray(scene, ray);
-            let color = match hit {
-                None => RGB::black(),
-                Some(ref hit) => compute_radiance(
-                    scene,
-                    ray,
-                    hit,
-                    &mut self.sample_generator,
-                    RECURSIONS,
-                    SUB_SPREAD,
-                ),
-            };
-            frame.push(color);
-        }
-
-        frame
-    }
-
     pub fn trace_frame_additive(&mut self, scene: &Scene, _timer: &mut BenchMark) {
-        let rays = self.camera.get_jittered_rays();
-
         const RECURSIONS: u8 = 2;
         const SUB_SPREAD: u32 = 1;
 
-        for (ray, (film_samples, film_pixel)) in rays.iter().zip(self.film.iter_mut()) {
-            let hit = intersect_ray(scene, ray);
+        let mut rng = rand::thread_rng();
+        for (i, (film_samples, film_pixel)) in self.film.iter_mut().enumerate() {
+            let ray = self
+                .camera
+                .get_ray(i % self.width, i / self.height, &mut rng);
+
+            let hit = intersect_ray(scene, &ray);
             let color = match hit {
                 None => RGB::black(),
                 Some(ref hit) => compute_radiance(
                     scene,
-                    ray,
+                    &ray,
                     hit,
                     &mut self.sample_generator,
                     RECURSIONS,

@@ -33,8 +33,8 @@ fn generate_events(window: &Window) -> Vec<Event> {
 
 fn main() -> Result<(), String> {
     // setup
-    const WIDTH: usize = 640;
-    const HEIGHT: usize = 480;
+    const WIDTH: usize = 320;
+    const HEIGHT: usize = 240;
     let mut window = Window::new("raytracer-rs", WIDTH, HEIGHT, WindowOptions::default())
         .map_err(|e| e.to_string())?;
     let frame = Arc::new(RwLock::new(vec![0u32; WIDTH * HEIGHT]));

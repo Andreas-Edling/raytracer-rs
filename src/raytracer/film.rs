@@ -22,7 +22,6 @@ impl Film {
         for s in self.num_samples.iter_mut() {
             *s = 0;
         }
-
     }
 
     pub fn iter_mut<'a>(&'a mut self) -> FilmIterMut<'a> {

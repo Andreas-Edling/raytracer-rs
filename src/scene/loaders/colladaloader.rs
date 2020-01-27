@@ -137,8 +137,8 @@ impl Collada {
                         continue;
                     }
                     cameras.push(Camera::from_orientation_matrix(
-                        640,
-                        480,
+                        320,
+                        240,
                         &node.matrix.to_vecmath_matrix(),
                         camera.fov,
                     ));
