@@ -216,6 +216,11 @@ impl Collada {
             }
         }
 
+        let tri_count = geometries
+            .iter()
+            .fold(0, |accum, geom| accum + geom.vertices.len() / 3);
+        println!("number of triangles: {}", tri_count);
+
         Scene {
             geometries,
             lights,
