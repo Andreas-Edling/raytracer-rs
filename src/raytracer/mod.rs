@@ -50,7 +50,8 @@ impl RayTracer {
         const SUB_SPREAD: u32 = 1;
 
         let mut rng = rand::thread_rng();
-        for (i, (film_samples, film_pixel)) in self.film.iter_mut().enumerate() {
+
+        for (i,pixel_and_sample_count) in self.film.pixels_and_sample_counts.iter_mut().enumerate() {
             let ray = self
                 .camera
                 .get_ray(i % self.width, i / self.height, &mut rng);
@@ -67,8 +68,7 @@ impl RayTracer {
                     SUB_SPREAD,
                 ),
             };
-            *film_samples += 1;
-            *film_pixel += color;
+            pixel_and_sample_count.add_sample(color);
         }
     }
 }
