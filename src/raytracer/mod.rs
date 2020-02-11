@@ -10,7 +10,7 @@ use film::Film;
 use sample_generator::SampleGenerator;
 use timing::BenchMark;
 
-struct Hit {
+pub struct Hit {
     distance: f32,
     geometry_index: usize,
     vertex_index: usize,
@@ -25,23 +25,75 @@ impl Hit {
     }
 }
 
-pub struct RayTracer {
+pub trait Intersector {
+    fn new(scene: &Scene) -> Self;
+    fn intersect_ray(&self, scene: &Scene, ray: &Ray) -> Option<Hit>;
+}
+
+pub struct NoAccelerationIntersector {}
+
+impl Intersector for NoAccelerationIntersector {
+    fn new(_scene: &Scene) -> Self {
+        NoAccelerationIntersector {}
+    }
+    fn intersect_ray(&self, scene: &Scene, ray: &Ray) -> Option<Hit> {
+        let mut closest_hit = None;
+
+        for (geom_idx, geom) in scene.geometries.iter().enumerate() {
+            let intersect_distances: Vec<Option<f32>> = geom
+                .transformed_vertices
+                .chunks(3)
+                .map(|tri_vertices| {
+                    intersect::intersect_late_out(
+                        ray,
+                        &tri_vertices[0],
+                        &tri_vertices[1],
+                        &tri_vertices[2],
+                    )
+                })
+                .collect();
+
+            for (vtx_idx, intersect_distance) in intersect_distances.iter().enumerate() {
+                match (&closest_hit, intersect_distance) {
+                    (None, None) => (),
+                    (Some(_), None) => (),
+                    (None, Some(dist)) => {
+                        closest_hit = Some(Hit::new(*dist, geom_idx, vtx_idx * 3));
+                    }
+                    (Some(hit), Some(dist)) => {
+                        if *dist < hit.distance {
+                            closest_hit = Some(Hit::new(*dist, geom_idx, vtx_idx * 3));
+                        }
+                    }
+                }
+            }
+        }
+        closest_hit
+    }
+}
+
+pub struct RayTracer<Accel = NoAccelerationIntersector>
+where
+    Accel: Intersector,
+{
     width: usize,
     height: usize,
     pub camera: Camera,
 
     sample_generator: sample_generator::SampleGenerator,
     pub film: Film,
+    accel: Accel,
 }
 
 impl RayTracer {
-    pub fn new(width: usize, height: usize, camera: Camera) -> Self {
+    pub fn new(width: usize, height: usize, camera: Camera, scene: &Scene) -> Self {
         RayTracer {
             width,
             height,
             camera,
             sample_generator: SampleGenerator::new(),
             film: Film::new(width * height),
+            accel: Intersector::new(scene),
         }
     }
 
@@ -51,16 +103,18 @@ impl RayTracer {
 
         let mut rng = rand::thread_rng();
 
-        for (i,pixel_and_sample_count) in self.film.pixels_and_sample_counts.iter_mut().enumerate() {
+        for (i, pixel_and_sample_count) in self.film.pixels_and_sample_counts.iter_mut().enumerate()
+        {
             let ray = self
                 .camera
                 .get_ray(i % self.width, i / self.height, &mut rng);
 
-            let hit = intersect_ray(scene, &ray);
+            let hit = self.accel.intersect_ray(&scene, &ray);
             let color = match hit {
                 None => RGB::black(),
                 Some(ref hit) => compute_radiance(
-                    scene,
+                    &self.accel,
+                    &scene,
                     &ray,
                     hit,
                     &mut self.sample_generator,
@@ -73,14 +127,18 @@ impl RayTracer {
     }
 }
 
-fn compute_radiance(
+fn compute_radiance<Accel>(
+    accel: &Accel,
     scene: &Scene,
     ray: &Ray,
     hit: &Hit,
     sample_generator: &mut SampleGenerator,
     recursions: u8,
     spread: u32,
-) -> RGB {
+) -> RGB
+where
+    Accel: Intersector,
+{
     let normal = calc_normal(scene, &hit);
     let radiance = shade(scene, ray, hit, &normal);
     if recursions < 1 {
@@ -93,10 +151,11 @@ fn compute_radiance(
         .map(|_| {
             let sub_ray = randomize_reflection_ray(sample_generator, hit, ray, &normal);
 
-            let sub_hit = intersect_ray(scene, &sub_ray);
+            let sub_hit = accel.intersect_ray(&scene, &sub_ray);
 
             match sub_hit {
                 Some(sub_hit) => compute_radiance(
+                    accel,
                     scene,
                     &sub_ray,
                     &sub_hit,
@@ -129,41 +188,6 @@ fn randomize_reflection_ray(
     let hit_point = hit_point + 0.00001 * &random_dir;
 
     Ray::new(hit_point, random_dir)
-}
-
-fn intersect_ray(scene: &Scene, ray: &Ray) -> Option<Hit> {
-    let mut closest_hit = None;
-
-    for (geom_idx, geom) in scene.geometries.iter().enumerate() {
-        let intersect_distances: Vec<Option<f32>> = geom
-            .transformed_vertices
-            .chunks(3)
-            .map(|tri_vertices| {
-                intersect::intersect_late_out(
-                    ray,
-                    &tri_vertices[0],
-                    &tri_vertices[1],
-                    &tri_vertices[2],
-                )
-            })
-            .collect();
-
-        for (vtx_idx, intersect_distance) in intersect_distances.iter().enumerate() {
-            match (&closest_hit, intersect_distance) {
-                (None, None) => (),
-                (Some(_), None) => (),
-                (None, Some(dist)) => {
-                    closest_hit = Some(Hit::new(*dist, geom_idx, vtx_idx * 3));
-                }
-                (Some(hit), Some(dist)) => {
-                    if *dist < hit.distance {
-                        closest_hit = Some(Hit::new(*dist, geom_idx, vtx_idx * 3));
-                    }
-                }
-            }
-        }
-    }
-    closest_hit
 }
 
 fn calc_normal(scene: &Scene, hit: &Hit) -> Vec3 {

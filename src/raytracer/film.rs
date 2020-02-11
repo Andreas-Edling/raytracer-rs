@@ -7,7 +7,10 @@ pub struct PixelAndSampleCount {
 }
 impl Default for PixelAndSampleCount {
     fn default() -> Self {
-        PixelAndSampleCount{pixel: RGB::black(), num_samples: 0 }
+        PixelAndSampleCount {
+            pixel: RGB::black(),
+            num_samples: 0,
+        }
     }
 }
 
@@ -39,7 +42,10 @@ impl Film {
     pub fn get_film(&self) -> Vec<RGB> {
         self.pixels_and_sample_counts
             .iter()
-            .map(|pixel_sum_and_num_samples| pixel_sum_and_num_samples.pixel * (1.0 / pixel_sum_and_num_samples.num_samples as f32))
+            .map(|pixel_sum_and_num_samples| {
+                pixel_sum_and_num_samples.pixel
+                    * (1.0 / pixel_sum_and_num_samples.num_samples as f32)
+            })
             .collect()
     }
 }
