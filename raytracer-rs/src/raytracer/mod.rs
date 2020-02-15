@@ -185,19 +185,19 @@ fn shade(scene: &Scene, ray: &Ray, hit: &Hit, normal: &Vec3) -> RGB {
 
         if !blocked {
             //lambertian / diffuse
-            accum_color += dot_light_normal
-                * light.color
-                * scene.geometries[hit.geometry_index].material.diffuse;
+            // accum_color += dot_light_normal
+            //     * light.color
+            //     * scene.geometries[hit.geometry_index].material.diffuse;
 
             // phong
-            // {
-            //     const SPECULAR: f32 = 0.5;
-            //     const DIFFUSE: f32 = 0.5;
-            //     const SHININESS: f32 = 32.0;
-            //     let view_ray = -ray.dir.normalized();
-            //     let reflected_light = 2.0*dot_light_normal*normal - ray_to_light.dir.normalized();
-            //     accum_color += (DIFFUSE*dot_light_normal + SPECULAR*dot(&view_ray, &reflected_light).powf(SHININESS)) * light.color;
-            // }
+            {
+                const SPECULAR: RGB = RGB::white();
+                let diffuse = &scene.geometries[hit.geometry_index].material.diffuse;
+                const SHININESS: f32 = 32.0;
+                let view_ray = ray.dir.normalized();
+                let reflected_light = 2.0*dot_light_normal*normal - ray_to_light.dir.normalized();
+                accum_color += (diffuse*dot_light_normal + SPECULAR*dot(&view_ray, &reflected_light).powf(SHININESS)) * light.color;
+            }
         }
     }
     accum_color

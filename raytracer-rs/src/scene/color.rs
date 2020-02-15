@@ -16,6 +16,14 @@ impl RGB {
             b: 0.0,
         }
     }
+
+    pub const fn white() -> Self {
+        RGB {
+            r: 1.0,
+            g: 1.0,
+            b: 1.0,
+        }
+    }
 }
 
 impl Default for RGB {
