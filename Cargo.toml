@@ -1,4 +1,6 @@
 [workspace]
 members = [
-	"raytracer-rs"
+    "raytracer-rs",
+    "parseval",
+    "timing"
 ]

@@ -142,7 +142,6 @@ dependencies = [
 [[package]]
 name = "parseval"
 version = "0.1.0"
-source = "git+https://github.com/Andreas-Edling/parseval#c5c221ad052ef7296f1aa1f214a5637fb2489a9e"
 
 [[package]]
 name = "pkg-config"
@@ -300,7 +299,7 @@ name = "raytracer-rs"
 version = "0.1.0"
 dependencies = [
  "minifb 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "parseval 0.1.0 (git+https://github.com/Andreas-Edling/parseval)",
+ "parseval 0.1.0",
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "timing 0.1.0 (git+https://github.com/Andreas-Edling/timing)",
 ]
@@ -377,6 +376,10 @@ version = "0.1.0"
 source = "git+https://github.com/Andreas-Edling/timing#2491356b5ba6f270d61b0e8e9bc10c059a85859c"
 
 [[package]]
+name = "timing"
+version = "0.1.0"
+
+[[package]]
 name = "wasi"
 version = "0.9.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -431,7 +434,6 @@ dependencies = [
 "checksum num-iter 0.1.40 (registry+https://github.com/rust-lang/crates.io-index)" = "dfb0800a0291891dd9f4fe7bd9c19384f98f7fbe0cd0f39a2c6b88b9868bbc00"
 "checksum num-traits 0.2.11 (registry+https://github.com/rust-lang/crates.io-index)" = "c62be47e61d1842b9170f0fdeec8eba98e60e90e5446449a0545e5152acd7096"
 "checksum orbclient 0.3.27 (registry+https://github.com/rust-lang/crates.io-index)" = "f8b18f57ab94fbd058e30aa57f712ec423c0bb7403f8493a6c58eef0c36d9402"
-"checksum parseval 0.1.0 (git+https://github.com/Andreas-Edling/parseval)" = "<none>"
 "checksum pkg-config 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)" = "05da548ad6865900e60eaba7f589cc0783590a92e940c26953ff81ddbab2d677"
 "checksum ppv-lite86 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)" = "74490b50b9fbe561ac330df47c08f3f33073d2d00c150f719147d7c54522fa1b"
 "checksum rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)" = "6d71dacdc3c88c1fde3885a3be3fbab9f35724e6ce99467f7d9c5026132184ca"

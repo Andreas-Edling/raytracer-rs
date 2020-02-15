@@ -1,5 +1,5 @@
 [package]
-name = "raytracer-rs"
+name = "timing"
 version = "0.1.0"
 authors = ["aeg <andreas.edling@gmail.com>"]
 edition = "2018"
@@ -7,8 +7,3 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
-rand = "0.7.2"
-minifb = "0.14.0"
-parseval ={ path = "../parseval"}
-timing = { git = "https://github.com/Andreas-Edling/timing" } 
