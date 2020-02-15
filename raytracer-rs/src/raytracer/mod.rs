@@ -26,7 +26,7 @@ impl Hit {
     }
 }
 
-pub struct RayTracer<Accel = OctTreeAccelerationIntersector>
+pub struct RayTracer<Accel = OctTreeIntersector>
 where
     Accel: Intersector,
 {
