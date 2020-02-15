@@ -36,17 +36,17 @@ type XYZ = RGB;
 
 fn to_xyz(color: &RGB) -> XYZ {
     XYZ::new(
-        0.4124564 * color.r + 0.3575761 * color.g + 0.1804375 * color.b,
-        0.2126729 * color.r + 0.7151522 * color.g + 0.0721750 * color.b,
-        0.0193339 * color.r + 0.1191920 * color.g + 0.9503041 * color.b,
+        0.412_456_4 * color.r + 0.357_576_1 * color.g + 0.180_437_5 * color.b,
+        0.212_672_9 * color.r + 0.715_152_2 * color.g + 0.072_175_0 * color.b,
+        0.019_333_9 * color.r + 0.119_192 * color.g + 0.950_304_1 * color.b,
     )
 }
 
 fn to_rgb(color: &XYZ) -> RGB {
     RGB::new(
-        3.2404542 * color.r + -1.5371385 * color.g + -0.4985314 * color.b,
-        -0.9692660 * color.r + 1.8760108 * color.g + 0.0415560 * color.b,
-        0.0556434 * color.r + -0.2040259 * color.g + 1.0572252 * color.b,
+        3.240_454_2 * color.r + -1.537_138_5 * color.g + -0.498_531_4 * color.b,
+        -0.969_266 * color.r + 1.876_010_8 * color.g + 0.041_556_0 * color.b,
+        0.055_643_4 * color.r + -0.204_025_9 * color.g + 1.057_225_2 * color.b,
     )
 }
 

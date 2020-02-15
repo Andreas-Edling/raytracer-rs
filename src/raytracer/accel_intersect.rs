@@ -45,6 +45,15 @@ impl Intersector for NoAccelerationIntersector {
     }
 }
 
+
+pub struct OctTreeAccelerationIntersector {
+    cubes: Vec<Cube>,
+    nodes: Vec<OctNode>,
+    trunk: usize,
+}
+
+const MAX_TRIANGLES_PER_LEAF: usize = 70;
+
 #[derive(Clone, Copy)]
 struct TriangleIndex {
     geom_idx: usize,
@@ -83,11 +92,6 @@ enum OctNode {
     Node([usize; 8]), //indices to nodes & cubes vec
 }
 
-pub struct OctTreeAccelerationIntersector {
-    cubes: Vec<Cube>,
-    nodes: Vec<OctNode>,
-    trunk: usize,
-}
 impl OctTreeAccelerationIntersector {
     fn split(&mut self, num_triangles: usize, scene: &Scene) {
         Self::split_node(
@@ -153,7 +157,7 @@ impl OctTreeAccelerationIntersector {
         node_idx: usize,
     ) -> Option<Hit> {
         match self.nodes[node_idx] {
-            OctNode::Leaf(ref leaf) => return intersect_leaf_triangles(scene, ray, leaf),
+            OctNode::Leaf(ref leaf) => intersect_leaf_triangles(scene, ray, leaf),
 
             OctNode::Node(ref child_indices) => {
                 // check children for intersections and order them
@@ -219,7 +223,7 @@ impl Intersector for OctTreeAccelerationIntersector {
             trunk,
         };
 
-        octtree.split(50, scene);
+        octtree.split(MAX_TRIANGLES_PER_LEAF, scene);
         octtree.print_debug_info();
         octtree
     }
@@ -229,7 +233,7 @@ impl Intersector for OctTreeAccelerationIntersector {
             ray.pos,
             Vec3::new(1.0 / ray.dir.x, 1.0 / ray.dir.y, 1.0 / ray.dir.z),
         );
-        return self.intersect_node(scene, ray, &inv_ray, self.trunk);
+        self.intersect_node(scene, ray, &inv_ray, self.trunk)
     }
 }
 
@@ -256,8 +260,8 @@ fn intersect_leaf_triangles(scene: &Scene, ray: &Ray, leaf: &Leaf) -> Option<Hit
 
 fn generate_child_cubes(cube: &Cube) -> [Cube; 8] {
     let mid = 0.5 * (cube.max + cube.min);
-    let min = cube.min.clone();
-    let max = cube.max.clone();
+    let min = cube.min;
+    let max = cube.max;
 
     [
         Cube::new(
@@ -348,16 +352,16 @@ pub fn intersect_cube_inverse_ray(inv_ray: &Ray, cube: &Cube) -> Option<f32> {
     let tmin = tmin.max(tz1.min(tz2));
     let tmax = tmax.min(tz1.max(tz2));
 
-    return if tmax >= tmin && tmax > 0.0 {
+    if tmax >= tmin && tmax > 0.0 {
         Some(tmin)
     } else {
         None
-    };
+    }
 }
 
 fn triangles_intersecting_cube(
     cube: &Cube,
-    triangle_indices: &Vec<TriangleIndex>,
+    triangle_indices: &[TriangleIndex],
     scene: &Scene,
 ) -> Vec<TriangleIndex> {
     let mut insiders = Vec::new();
@@ -398,14 +402,14 @@ fn triangle_cube_intersection(cube: &Cube, tri_vertices: &[Vec3]) -> bool {
 
     // triangle normal axis test
     let cube_vertices = [
-        cube.min.clone(),
+        cube.min,
         Vec3::new(cube.max.x, cube.min.y, cube.min.z),
         Vec3::new(cube.min.x, cube.max.y, cube.min.z),
         Vec3::new(cube.min.x, cube.min.y, cube.max.z),
         Vec3::new(cube.min.x, cube.max.y, cube.max.z),
         Vec3::new(cube.max.x, cube.min.y, cube.max.z),
         Vec3::new(cube.max.x, cube.max.y, cube.min.z),
-        cube.max.clone(),
+        cube.max,
     ];
     let tri_edge_1 = tri_vertices[0] - tri_vertices[1];
     let tri_edge_2 = tri_vertices[1] - tri_vertices[2];
@@ -439,7 +443,7 @@ fn triangle_cube_intersection(cube: &Cube, tri_vertices: &[Vec3]) -> bool {
     }
 
     // no separating axis found
-    return true;
+    true
 }
 
 fn project_points_on_axis(points: &[Vec3], axis: &Vec3) -> (f32, f32) {

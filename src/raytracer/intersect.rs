@@ -17,7 +17,7 @@ pub fn intersect(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32
     }
     let inv_det = 1.0 / det;
 
-    let tvec = &ray.pos - v0;
+    let tvec = ray.pos - v0;
     let u = dot(&tvec, &pvec) * inv_det;
     if u < 0.0 || u > 1.0 {
         return None;
@@ -53,7 +53,7 @@ pub fn intersect_late_out(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> O
 
     let inv_det = 1.0 / det;
 
-    let tvec = &ray.pos - v0;
+    let tvec = ray.pos - v0;
     let u = dot(&tvec, &pvec) * inv_det;
 
     let qvec = cross(&tvec, &v0v1);
@@ -84,7 +84,7 @@ pub fn intersect_later_out(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> 
     let v0v2 = v2 - v0;
     let pvec = cross(&ray.dir, &v0v2);
     let det = dot(&v0v1, &pvec);
-    let tvec = &ray.pos - v0;
+    let tvec = ray.pos - v0;
     let qvec = cross(&tvec, &v0v1);
 
     let u = dot(&tvec, &pvec);

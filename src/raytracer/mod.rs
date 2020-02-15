@@ -138,7 +138,7 @@ fn randomize_reflection_ray(
     }
 
     // calc pos and offset slightly
-    let hit_point = &ray.pos + hit.distance * &ray.dir;
+    let hit_point = ray.pos + hit.distance * ray.dir;
     let hit_point = hit_point + 0.00001 * &random_dir;
 
     Ray::new(hit_point, random_dir)
@@ -147,19 +147,18 @@ fn randomize_reflection_ray(
 fn calc_normal(scene: &Scene, hit: &Hit) -> Vec3 {
     let geom_vertices = &scene.geometries[hit.geometry_index].vertices;
     let normal = cross(
-        &(&geom_vertices[hit.vertex_index + 1] - &geom_vertices[hit.vertex_index]),
-        &(&geom_vertices[hit.vertex_index + 2] - &geom_vertices[hit.vertex_index]),
+        &(geom_vertices[hit.vertex_index + 1] - geom_vertices[hit.vertex_index]),
+        &(geom_vertices[hit.vertex_index + 2] - geom_vertices[hit.vertex_index]),
     );
-    let normal = normal.normalized();
-    normal
+    normal.normalized()
 }
 
 fn shade(scene: &Scene, ray: &Ray, hit: &Hit, normal: &Vec3) -> RGB {
     let mut accum_color = RGB::black();
-    let hit_point = &ray.pos + hit.distance * &ray.dir;
+    let hit_point = ray.pos + hit.distance * ray.dir;
 
     for light in &scene.lights {
-        let ray_to_light = Ray::new(hit_point.clone(), &light.pos - &hit_point);
+        let ray_to_light = Ray::new(hit_point, light.pos - hit_point);
         let dot_light_normal = dot(&normal, &ray_to_light.dir.normalized());
 
         if dot_light_normal < 0.0 {
@@ -187,8 +186,8 @@ fn shade(scene: &Scene, ray: &Ray, hit: &Hit, normal: &Vec3) -> RGB {
         if !blocked {
             //lambertian / diffuse
             accum_color += dot_light_normal
-                * &light.color
-                * &scene.geometries[hit.geometry_index].material.diffuse;
+                * light.color
+                * scene.geometries[hit.geometry_index].material.diffuse;
 
             // phong
             // {
