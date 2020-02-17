@@ -30,6 +30,15 @@ impl Cube {
     fn new(min: Vec3, max: Vec3) -> Self {
         Cube { min, max }
     }
+    
+    fn contains(&self, v: &Vec3) -> bool {
+        if v.x < self.min.x || v.x > self.max.x ||
+           v.y < self.min.y || v.y > self.max.y ||
+           v.z < self.min.z || v.z > self.max.z {
+              return false; 
+        }
+        true
+    }
 }
 
 struct Leaf {
@@ -114,7 +123,23 @@ impl OctTreeIntersector {
         node_idx: usize,
     ) -> Option<Hit> {
         match self.nodes[node_idx] {
-            OctNode::Leaf(ref leaf) => intersect_leaf_triangles(scene, ray, leaf),
+            OctNode::Leaf(ref leaf) => {
+                match intersect_leaf_triangles(scene, ray, leaf) {
+                    None => None,
+                    Some(hit) => {
+                        // Since we arent splitting triangles in the octtree, the hit point on the triangle
+                        // might actually lay outside of this cube, in some other cube to be intersected later. 
+                        // In that case, there might be another triangle closer in the next cube, so we get a faulty result. 
+                        // We need to check that the hit point actually is in this cube, or return None.
+                        let hit_point = ray.pos + ray.dir * hit.distance;
+                        if self.cubes[node_idx].contains(&hit_point) {
+                            Some(hit)
+                        } else {
+                            None
+                        }
+                    }
+                }
+            },
 
             OctNode::Node(ref child_indices) => {
                 // check children for intersections and order them
