@@ -42,6 +42,12 @@ fn main() -> Result<(), String> {
             .value_name("MAX_TRIS")
             .help(&format!("sets maximum number of triangles per leaf in octtree. defaults to {} if omitted",raytracer::accel_intersect::oct_tree_intersector::DEFAULT_TRIANGLES_PER_LEAF))
         )
+        .arg(Arg::with_name("frame_iterations")
+            .short("f")
+            .long("frame_iterations")
+            .value_name("FRAME_ITERATIONS")
+            .help(&format!("sets a bound on how many frame iterations should be calculated."))
+        )
         .get_matches();
 
     let max_triangles = match matches.value_of("max_triangles") {
@@ -50,6 +56,13 @@ fn main() -> Result<(), String> {
     };
     println!("max triangles per leaf: {}",max_triangles);
 
+    let frame_iterations = match matches.value_of("frame_iterations") {
+        Some(frame_iterations) => frame_iterations.parse::<usize>().ok(),
+        None => None,
+    };
+    if let Some(frame_iterations) = frame_iterations {
+        println!("will quit after {} frame iterations", frame_iterations);
+    }
 
     // setup
     const WIDTH: usize = 1024;
@@ -65,6 +78,7 @@ fn main() -> Result<(), String> {
     ) = std::sync::mpsc::channel();
     let (shutdown_sender, shutdown_receiver) = std::sync::mpsc::channel();
     let mut fps = Fps::new();
+    let mut current_iteration = 0;
     let scene = ColladaLoader::from_file("./data/ico2.dae").map_err(|e| e.to_string())?;
     let octtree = raytracer::accel_intersect::OctTreeIntersector::with_triangles_per_leaf(&scene, max_triangles);
     let mut raytracer = raytracer::RayTracer::new_with_intersector(WIDTH, HEIGHT, scene.cameras[0].clone(), octtree);
@@ -186,6 +200,14 @@ fn main() -> Result<(), String> {
             copied_frame_sender
                 .send(())
                 .expect("channel copied_frame_sender failed on send");
+
+
+            if let Some(frame_iterations) = frame_iterations {
+                current_iteration += 1;
+                if current_iteration >= frame_iterations {
+                    break;
+                }
+            }
         }
 
         window.update();
