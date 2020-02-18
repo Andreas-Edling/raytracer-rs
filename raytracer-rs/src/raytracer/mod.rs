@@ -1,4 +1,4 @@
-mod accel_intersect;
+pub mod accel_intersect;
 mod film;
 mod intersect;
 mod sample_generator;
@@ -39,7 +39,10 @@ where
     accel: Accel,
 }
 
-impl RayTracer {
+impl<Accel> RayTracer<Accel> 
+where Accel: Intersector {
+    
+    #[allow(dead_code)]
     pub fn new(width: usize, height: usize, camera: Camera, scene: &Scene) -> Self {
         RayTracer {
             width,
@@ -48,6 +51,17 @@ impl RayTracer {
             sample_generator: SampleGenerator::new(),
             film: Film::new(width * height),
             accel: Intersector::new(scene),
+        }
+    }
+
+    pub fn new_with_intersector(width: usize, height: usize, camera: Camera, accel: Accel) -> Self {
+        RayTracer {
+            width,
+            height,
+            camera,
+            sample_generator: SampleGenerator::new(),
+            film: Film::new(width * height),
+            accel,
         }
     }
 

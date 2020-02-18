@@ -9,7 +9,7 @@ pub struct OctTreeIntersector {
     trunk: usize,
 }
 
-const MAX_TRIANGLES_PER_LEAF: usize = 70;
+pub const DEFAULT_TRIANGLES_PER_LEAF: usize = 70;
 
 #[derive(Clone, Copy)]
 struct TriangleIndex {
@@ -59,6 +59,23 @@ enum OctNode {
 }
 
 impl OctTreeIntersector {
+    pub fn with_triangles_per_leaf(scene: &Scene, triangles_per_leaf: usize) -> Self {
+            let trunk_cube = calc_extents(&scene);
+            let all_triangle_indices = all_triangle_indices(&scene);
+            let trunk = 0;
+            let leaf = Leaf::new(trunk, all_triangle_indices);
+            let nodes = vec![OctNode::Leaf(leaf)];
+            let mut octtree = Self {
+                cubes: vec![trunk_cube],
+                nodes,
+                trunk,
+            };
+    
+            octtree.split(triangles_per_leaf, scene);
+            //octtree.print_debug_info();
+            octtree
+    }
+
     fn split(&mut self, num_triangles: usize, scene: &Scene) {
         Self::split_node(
             self.trunk,
@@ -166,6 +183,7 @@ impl OctTreeIntersector {
         }
     }
 
+    #[allow(dead_code)]
     fn print_debug_info(&self) {
         self.print_rec(self.trunk, 0)
     }
@@ -194,22 +212,9 @@ impl OctTreeIntersector {
 
 impl Intersector for OctTreeIntersector {
     fn new(scene: &Scene) -> Self {
-        let trunk_cube = calc_extents(&scene);
-        let all_triangle_indices = all_triangle_indices(&scene);
-        let trunk = 0;
-        let leaf = Leaf::new(trunk, all_triangle_indices);
-        let nodes = vec![OctNode::Leaf(leaf)];
-        let mut octtree = Self {
-            cubes: vec![trunk_cube],
-            nodes,
-            trunk,
-        };
-
-        octtree.split(MAX_TRIANGLES_PER_LEAF, scene);
-        octtree.print_debug_info();
-        octtree
+        OctTreeIntersector::with_triangles_per_leaf(scene, DEFAULT_TRIANGLES_PER_LEAF)
     }
-
+ 
     fn intersect_ray(&self, scene: &Scene, ray: &Ray) -> Option<Hit> {
         let inv_ray = Ray::new(
             ray.pos,

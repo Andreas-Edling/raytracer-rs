@@ -9,6 +9,7 @@ use std::{
 };
 
 use minifb::{Key, Window, WindowOptions};
+use clap::{Arg, App};
 
 #[allow(unused_imports)]
 use scene::loaders::{boxloader::BoxLoader, colladaloader::ColladaLoader, SceneLoader};
@@ -32,6 +33,24 @@ fn generate_events(window: &Window) -> Vec<Event> {
 }
 
 fn main() -> Result<(), String> {
+    let matches = App::new("raytracer-rs")
+        .version("0.1.0")
+        .author("Andreas Edling")
+        .arg(Arg::with_name("max_triangles")
+            .short("m")
+            .long("max_triangles")
+            .value_name("MAX_TRIS")
+            .help(&format!("sets maximum number of triangles per leaf in octtree. defaults to {} if omitted",raytracer::accel_intersect::oct_tree_intersector::DEFAULT_TRIANGLES_PER_LEAF))
+        )
+        .get_matches();
+
+    let max_triangles = match matches.value_of("max_triangles") {
+        Some(max_triangles) => max_triangles.parse::<usize>().unwrap_or(raytracer::accel_intersect::oct_tree_intersector::DEFAULT_TRIANGLES_PER_LEAF),
+        None => raytracer::accel_intersect::oct_tree_intersector::DEFAULT_TRIANGLES_PER_LEAF,
+    };
+    println!("max triangles per leaf: {}",max_triangles);
+
+
     // setup
     const WIDTH: usize = 1024;
     const HEIGHT: usize = 768;
@@ -47,7 +66,8 @@ fn main() -> Result<(), String> {
     let (shutdown_sender, shutdown_receiver) = std::sync::mpsc::channel();
     let mut fps = Fps::new();
     let scene = ColladaLoader::from_file("./data/ico2.dae").map_err(|e| e.to_string())?;
-    let mut raytracer = raytracer::RayTracer::new(WIDTH, HEIGHT, scene.cameras[0].clone(), &scene);
+    let octtree = raytracer::accel_intersect::OctTreeIntersector::with_triangles_per_leaf(&scene, max_triangles);
+    let mut raytracer = raytracer::RayTracer::new_with_intersector(WIDTH, HEIGHT, scene.cameras[0].clone(), octtree);
 
     // raytracer loop
     let raytracer_thread = std::thread::spawn({
@@ -148,6 +168,7 @@ fn main() -> Result<(), String> {
                 }
             }
             println!("{}", timer);
+            println!("mean fps {}", fps.mean());
         }
     });
 
@@ -193,17 +214,27 @@ fn main() -> Result<(), String> {
 
 struct Fps {
     last_iteration: std::time::Instant,
+    fps_sum: f32,
+    num_measurements: u32,
 }
+
 impl Fps {
     fn new() -> Self {
         let last_iteration = std::time::Instant::now();
-        Fps { last_iteration }
+        Fps { last_iteration, fps_sum: 0.0, num_measurements: 0 }
     }
 
     fn fps(&mut self) -> f32 {
         let now = std::time::Instant::now();
         let frame_duration: std::time::Duration = now - self.last_iteration;
         self.last_iteration = now;
-        1.0 / frame_duration.as_secs_f32()
+        let fps = 1.0 / frame_duration.as_secs_f32();
+        self.fps_sum += fps;
+        self.num_measurements += 1;
+        fps
+    }
+
+    fn mean(&self) -> f32 {
+        self.fps_sum / self.num_measurements as f32
     }
 }
