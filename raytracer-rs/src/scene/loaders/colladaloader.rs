@@ -131,7 +131,7 @@ impl Collada {
 
         for visual_scene in &self.visual_scenes {
             for node in &visual_scene.nodes {
-                println!("imported node {}", node.id);
+                //println!("imported node {}", node.id);
                 for camera in &self.cameras {
                     if camera.id != node.id {
                         continue;

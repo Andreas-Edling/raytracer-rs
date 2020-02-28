@@ -182,7 +182,7 @@ fn main() -> Result<(), String> {
                 }
             }
             println!("{}", timer);
-            println!("mean fps {}", fps.mean());
+            println!("mean fps {}\n\n", fps.mean());
         }
     });
 

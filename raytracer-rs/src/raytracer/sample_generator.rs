@@ -24,7 +24,7 @@ impl SampleGenerator {
     }
 
     pub fn normalized_vec_lookup(&mut self) -> Vec3 {
-        self.sample_idx += 1;
+        self.sample_idx = (self.sample_idx + 1) % SAMPLE_MAX;
         self.normalized_vecs[self.sample_idx as usize]
     }
 

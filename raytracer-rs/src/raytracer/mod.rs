@@ -108,7 +108,7 @@ where
     Accel: Intersector,
 {
     let normal = calc_normal(scene, &hit);
-    let radiance = shade(scene, ray, hit, &normal);
+    let radiance = shade(accel, scene, ray, hit, &normal);
     if recursions < 1 {
         return radiance;
     }
@@ -167,7 +167,8 @@ fn calc_normal(scene: &Scene, hit: &Hit) -> Vec3 {
     normal.normalized()
 }
 
-fn shade(scene: &Scene, ray: &Ray, hit: &Hit, normal: &Vec3) -> RGB {
+fn shade<Accel>(accel: &Accel, scene: &Scene, ray: &Ray, hit: &Hit, normal: &Vec3) -> RGB 
+where Accel: Intersector {
     let mut accum_color = RGB::black();
     let hit_point = ray.pos + hit.distance * ray.dir;
 
@@ -181,21 +182,28 @@ fn shade(scene: &Scene, ray: &Ray, hit: &Hit, normal: &Vec3) -> RGB {
 
         //is light blocked by geometry?
         let mut blocked = false;
-        for geom in &scene.geometries {
-            for tri_vertices in geom.vertices.chunks(3) {
-                if let Some(t) = intersect::intersect_later_out(
-                    &ray_to_light,
-                    &tri_vertices[0],
-                    &tri_vertices[1],
-                    &tri_vertices[2],
-                ) {
-                    if t > 0.0001 && t < 1.0 {
-                        blocked = true;
-                        break;
-                    }
-                }
+        let ray_to_light_offseted = Ray::new(ray_to_light.pos + ray_to_light.dir * 0.01, ray_to_light.dir);
+        if let Some(hit) = accel.intersect_ray(&scene, &ray_to_light_offseted) {
+            if hit.distance > 0.01 && hit.distance < 1.0 {
+                blocked = true;
             }
         }
+        
+        // for geom in &scene.geometries {
+        //     for tri_vertices in geom.vertices.chunks(3) {
+        //         if let Some(t) = intersect::intersect_later_out( 
+        //             &ray_to_light,
+        //             &tri_vertices[0],
+        //             &tri_vertices[1],
+        //             &tri_vertices[2],
+        //         ) {
+        //             if t > 0.0001 && t < 1.0 {
+        //                 blocked = true;
+        //                 break;
+        //             }
+        //         }
+        //     }
+        // }
 
         if !blocked {
             //lambertian / diffuse

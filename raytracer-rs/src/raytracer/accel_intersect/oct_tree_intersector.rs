@@ -83,6 +83,7 @@ impl OctTreeIntersector {
             &mut self.cubes,
             num_triangles,
             scene,
+            0,
         );
     }
 
@@ -92,6 +93,7 @@ impl OctTreeIntersector {
         cubes: &mut Vec<Cube>,
         num_triangles: usize,
         scene: &Scene,
+        recurse_level: usize,
     ) {
         let mut new_nodes = Vec::new();
         let mut new_child_list = [0; 8];
@@ -99,15 +101,15 @@ impl OctTreeIntersector {
         match nodes[node_idx] {
             OctNode::Node(_) => return,
             OctNode::Leaf(ref leaf) => {
-                if leaf.triangle_indices.len() <= num_triangles {
+                if leaf.triangle_indices.len() <= num_triangles || recurse_level > 8 {
                     return;
                 }
 
-                println!(
-                    "splitting node {} containing {} triangles",
-                    node_idx,
-                    leaf.triangle_indices.len()
-                );
+                // println!(
+                //     "splitting node {} containing {} triangles",
+                //     node_idx,
+                //     leaf.triangle_indices.len()
+                // );
 
                 let cube = &cubes[leaf.cube_index];
                 let child_cubes = generate_child_cubes(cube);
@@ -128,7 +130,7 @@ impl OctTreeIntersector {
         let start_idx_new_nodes = nodes.len();
         nodes.append(&mut new_nodes);
         for child_node_idx in start_idx_new_nodes..start_idx_new_nodes + 8 {
-            Self::split_node(child_node_idx, nodes, cubes, num_triangles, &scene);
+            Self::split_node(child_node_idx, nodes, cubes, num_triangles, &scene, recurse_level+1);
         }
     }
 
@@ -181,6 +183,18 @@ impl OctTreeIntersector {
                 None
             }
         }
+
+        // fn slab(ray: &Ray, cube: &Cube) {
+        //     // discard hemicubes on x,y,z parts based on entry & exit points
+
+        //     // entry & exit on parallel planes
+        //     //  -we can find the between-planes intersection point trivially
+
+
+        //     // entry & exit are on orthogonal planes
+        // }
+
+
     }
 
     #[allow(dead_code)]

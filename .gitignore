@@ -2,3 +2,5 @@
 **/*.rs.bk
 **/*.blend
 **/*.blend1
+
+result.txt
