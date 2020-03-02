@@ -36,6 +36,12 @@ fn main() -> Result<(), String> {
     let matches = App::new("raytracer-rs")
         .version("0.1.0")
         .author("Andreas Edling")
+        .arg(Arg::with_name("collada_file")
+            .short("f")
+            .long("file")
+            .value_name("COLLADA_FILENAME")
+            .help("what collada (.dae) file to load for rendering")
+        )
         .arg(Arg::with_name("max_triangles")
             .short("m")
             .long("max_triangles")
@@ -64,6 +70,11 @@ fn main() -> Result<(), String> {
         println!("will quit after {} frame iterations", frame_iterations);
     }
 
+    let filename = match matches.value_of("collada_file") {
+        Some(collada_file) => collada_file,
+        None => "./data/ico2.dae",
+    };
+
     // setup
     const WIDTH: usize = 1024;
     const HEIGHT: usize = 768;
@@ -79,7 +90,7 @@ fn main() -> Result<(), String> {
     let (shutdown_sender, shutdown_receiver) = std::sync::mpsc::channel();
     let mut fps = Fps::new();
     let mut current_iteration = 0;
-    let scene = ColladaLoader::from_file("./data/ico2.dae").map_err(|e| e.to_string())?;
+    let scene = ColladaLoader::from_file(filename).map_err(|e| e.to_string())?;
     let octtree = raytracer::accel_intersect::OctTreeIntersector::with_triangles_per_leaf(&scene, max_triangles);
     let mut raytracer = raytracer::RayTracer::new_with_intersector(WIDTH, HEIGHT, scene.cameras[0].clone(), octtree);
 
