@@ -1,4 +1,4 @@
-use crate::raytracer::{intersect::intersect_late_out, Hit};
+use crate::raytracer::{intersect, Hit};
 use crate::scene::Scene;
 use crate::vecmath::Ray;
 use super::Intersector;
@@ -19,7 +19,7 @@ impl Intersector for NoAccelerationIntersector {
                 .transformed_vertices
                 .chunks(3)
                 .map(|tri_vertices| {
-                    intersect_late_out(ray, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2])
+                    intersect::intersect(ray, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2])
                 })
                 .collect();
 

@@ -1,4 +1,4 @@
-use crate::raytracer::{intersect::intersect_late_out, Hit};
+use crate::raytracer::{intersect, Hit};
 use crate::scene::Scene;
 use crate::vecmath::{cross, dot, Ray, Vec3};
 use super::Intersector;
@@ -244,7 +244,8 @@ fn intersect_leaf_triangles(scene: &Scene, ray: &Ray, leaf: &Leaf) -> Option<Hit
     for index in &leaf.triangle_indices {
         let tri_vertices = &scene.geometries[index.geom_idx].transformed_vertices
             [index.tri_idx..index.tri_idx + 3];
-        let t = intersect_late_out(ray, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]);
+        let t = intersect::intersect(ray, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]);
+
         match (&closest_hit, t) {
             (None, None) => (),
             (Some(_), None) => (),
