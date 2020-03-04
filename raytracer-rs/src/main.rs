@@ -78,7 +78,8 @@ impl CmdArgs {
     
         let collada_filename = match matches.value_of("collada_file") {
             Some(collada_file) => collada_file,
-            None => "./data/ico3_tex.dae",
+            //None => "./data/ico3_tex.dae",
+            None => "./data/thai2.dae",
         }.to_string();
 
         CmdArgs{max_triangles, frame_iterations, collada_filename}
