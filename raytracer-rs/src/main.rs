@@ -72,7 +72,7 @@ fn main() -> Result<(), String> {
 
     let filename = match matches.value_of("collada_file") {
         Some(collada_file) => collada_file,
-        None => "./data/ico2.dae",
+        None => "./data/ico3_tex.dae",
     };
 
     // setup

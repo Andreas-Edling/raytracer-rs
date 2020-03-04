@@ -6,7 +6,7 @@ use crate::scene::{camera::Camera, color::RGB, Geometry, Light, Material, Scene,
 pub struct BoxLoader;
 
 impl SceneLoader for BoxLoader {
-    fn from_str(_s: &str) -> Result<Scene, SceneLoadError> {
+    fn from_str(_doc: &str, _data_dir: Option<&std::path::Path>) -> Result<Scene, SceneLoadError> {
         Err(SceneLoadError::BoxLoader(
             "not implemented for BoxLoader".to_string(),
         ))
@@ -76,11 +76,14 @@ impl SceneLoader for BoxLoader {
             RGB::new(1.0, 1.0, 1.0),
         )];
 
+        let textures = Vec::new();
+
         let cameras = vec![Camera::new(640, 480, &Vec3::new(0.0, 0.0, 0.0), 60.0)];
         Ok(Scene {
             geometries,
             lights,
             cameras,
+            textures,
         })
     }
 }

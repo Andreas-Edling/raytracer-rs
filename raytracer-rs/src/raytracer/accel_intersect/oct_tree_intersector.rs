@@ -150,7 +150,7 @@ impl OctTreeIntersector {
                         // might actually lay outside of this cube, in some other cube to be intersected later. 
                         // In that case, there might be another triangle closer in the next cube, so we get a faulty result. 
                         // We need to check that the hit point actually is in this cube, or return None.
-                        let hit_point = ray.pos + ray.dir * hit.distance;
+                        let hit_point = ray.pos + ray.dir * hit.hit_info.t;
                         if self.cubes[node_idx].contains(&hit_point) {
                             Some(hit)
                         } else {
@@ -244,15 +244,15 @@ fn intersect_leaf_triangles(scene: &Scene, ray: &Ray, leaf: &Leaf) -> Option<Hit
     for index in &leaf.triangle_indices {
         let tri_vertices = &scene.geometries[index.geom_idx].transformed_vertices
             [index.tri_idx..index.tri_idx + 3];
-        let t = intersect::intersect(ray, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]);
+        let hit_info = intersect::intersect(ray, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]);
 
-        match (&closest_hit, t) {
+        match (&closest_hit, &hit_info) {
             (None, None) => (),
             (Some(_), None) => (),
-            (None, Some(dist)) => closest_hit = Some(Hit::new(dist, index.geom_idx, index.tri_idx)),
-            (Some(hit), Some(dist)) => {
-                if dist < hit.distance {
-                    closest_hit = Some(Hit::new(dist, index.geom_idx, index.tri_idx))
+            (None, Some(hit_info)) => closest_hit = Some(Hit::new(hit_info.clone(), index.geom_idx, index.tri_idx)),
+            (Some(hit), Some(hit_info)) => {
+                if hit_info.t < hit.hit_info.t {
+                    closest_hit = Some(Hit::new(hit_info.clone(), index.geom_idx, index.tri_idx))
                 }
             }
         }

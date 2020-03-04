@@ -11,12 +11,21 @@ pub struct ColladaLight {
     pub light: Light,
 }
 
+pub enum ColladaDiffuseOrTexImageId {
+    Diffuse(RGBA),
+    TexImageId(String),
+}
 pub struct ColladaEffect {
     pub id: String,
     pub emission: RGBA,
-    pub diffuse: RGBA,
+    pub diffuse_or_tex: ColladaDiffuseOrTexImageId,
     pub specular: Option<f32>,
     pub index_of_refraction: f32,
+}
+
+pub struct ColladaImage {
+    pub id: String,
+    pub image_filename: String,
 }
 
 pub struct ColladaMaterial {

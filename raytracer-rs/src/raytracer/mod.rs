@@ -3,23 +3,24 @@ mod film;
 mod intersect;
 mod sample_generator;
 
-use crate::scene::{camera::Camera, color::RGB, Ray, Scene};
+use crate::scene::{camera::Camera, color::RGB, color::Diffuse, Ray, Scene};
 use crate::vecmath::{cross, dot, Vec3};
 
+use intersect::HitInfo;
 use accel_intersect::*;
 use film::Film;
 use sample_generator::SampleGenerator;
 use timing::BenchMark;
 
 pub struct Hit {
-    distance: f32,
+    hit_info: HitInfo,
     geometry_index: usize,
     vertex_index: usize,
 }
 impl Hit {
-    fn new(distance: f32, geometry_index: usize, vertex_index: usize) -> Self {
+    fn new(hit_info: HitInfo, geometry_index: usize, vertex_index: usize) -> Self {
         Hit {
-            distance,
+            hit_info,
             geometry_index,
             vertex_index,
         }
@@ -152,7 +153,7 @@ fn randomize_reflection_ray(
     }
 
     // calc pos and offset slightly
-    let hit_point = ray.pos + hit.distance * ray.dir;
+    let hit_point = ray.pos + hit.hit_info.t * ray.dir;
     let hit_point = hit_point + 0.00001 * &random_dir;
 
     Ray::new(hit_point, random_dir)
@@ -170,7 +171,7 @@ fn calc_normal(scene: &Scene, hit: &Hit) -> Vec3 {
 fn shade<Accel>(accel: &Accel, scene: &Scene, ray: &Ray, hit: &Hit, normal: &Vec3) -> RGB 
 where Accel: Intersector {
     let mut accum_color = RGB::black();
-    let hit_point = ray.pos + hit.distance * ray.dir;
+    let hit_point = ray.pos + hit.hit_info.t * ray.dir;
 
     for light in &scene.lights {
         let ray_to_light = Ray::new(hit_point, light.pos - hit_point);
@@ -184,7 +185,7 @@ where Accel: Intersector {
         let mut blocked = false;
         let ray_to_light_offseted = Ray::new(ray_to_light.pos + ray_to_light.dir * 0.01, ray_to_light.dir);
         if let Some(hit) = accel.intersect_ray(&scene, &ray_to_light_offseted) {
-            if hit.distance > 0.01 && hit.distance < 1.0 {
+            if hit.hit_info.t > 0.01 && hit.hit_info.t < 1.0 {
                 blocked = true;
             }
         }
@@ -215,10 +216,19 @@ where Accel: Intersector {
             {
                 const SPECULAR: RGB = RGB::white();
                 let diffuse = &scene.geometries[hit.geometry_index].material.diffuse;
+                let diffuse_rgb = match diffuse {
+                    Diffuse::Color(rgb) => rgb,
+                    Diffuse::TextureId(tex_id) => {
+                        let texture = &scene.textures[*tex_id];
+                        texture.get_texel(hit.hit_info.u, hit.hit_info.v)
+                    }
+                };
+
+
                 const SHININESS: f32 = 32.0;
                 let view_ray = ray.dir.normalized();
                 let reflected_light = 2.0*dot_light_normal*normal - ray_to_light.dir.normalized();
-                accum_color += (diffuse*dot_light_normal + SPECULAR*dot(&view_ray, &reflected_light).powf(SHININESS)) * light.color;
+                accum_color += (diffuse_rgb*dot_light_normal + SPECULAR*dot(&view_ray, &reflected_light).powf(SHININESS)) * light.color;
             }
         }
     }

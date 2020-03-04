@@ -24,6 +24,16 @@ impl RGB {
             b: 1.0,
         }
     }
+
+    pub const fn pink() -> Self {
+        RGB {
+            r: 1.0,
+            g: 0.1,
+            b: 0.5,
+        }
+    }
+
+
 }
 
 impl Default for RGB {
@@ -84,5 +94,17 @@ impl RGBA {
         let b = (self.b.min(1.0).max(0.0) * 255.0) as u8;
         let a = (self.a.min(1.0).max(0.0) * 255.0) as u8;
         b as u32 | (g as u32) << 8 | (r as u32) << 16 | (a as u32) << 24
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Diffuse {
+    Color(RGB),
+    TextureId(usize) 
+}
+
+impl Default for Diffuse {
+    fn default() -> Self {
+        Diffuse::Color(RGB::default())
     }
 }

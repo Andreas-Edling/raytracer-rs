@@ -1,10 +1,11 @@
 pub mod camera;
 pub mod color;
 pub mod loaders;
+pub mod texture;
 
 pub use crate::vecmath::*;
 use camera::Camera;
-use color::RGB;
+use color::{RGB, Diffuse};
 
 pub type Vertex = Vec3;
 
@@ -24,6 +25,7 @@ pub struct Scene {
     pub geometries: Vec<Geometry>,
     pub lights: Vec<Light>,
     pub cameras: Vec<Camera>,
+    pub textures: Vec<texture::Texture>,
 }
 
 impl Scene {
@@ -60,7 +62,7 @@ impl Geometry {
 
 #[derive(Debug, Clone, Default)]
 pub struct Material {
-    pub diffuse: RGB,
+    pub diffuse: Diffuse,
     pub emissive: RGB,
     pub specular: Option<f32>,
     pub index_of_refraction: f32,

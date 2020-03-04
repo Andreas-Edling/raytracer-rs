@@ -1,7 +1,18 @@
 use crate::scene::{Ray, Vertex};
 
+#[derive(Debug, Clone)]
+pub struct HitInfo {
+    pub t: f32,
+    pub u: f32,
+    pub v: f32,
+}
+impl HitInfo {
+    pub fn new(t: f32, u: f32, v: f32) -> Self {
+        Self{t,u,v}
+    }
+}
 
-pub fn intersect(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
+pub fn intersect(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<HitInfo> {
     moller_trumbore::intersect_late_out(ray, v0, v1, v2)
 }
 
@@ -10,9 +21,10 @@ mod moller_trumbore {
 
     use crate::scene::{Ray, Vertex};
     use crate::vecmath::{cross, dot};
+    use super::HitInfo;
 
     #[allow(dead_code)]
-    pub fn intersect(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
+    pub fn intersect(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<HitInfo> {
         // Möller-Trumbore algo
 
         let v0v1 = v1 - v0;
@@ -44,11 +56,11 @@ mod moller_trumbore {
         if t < 0.0 {
             return None;
         }
-        Some(t)
+        Some(HitInfo::new(t,u,v))
     }
 
     #[allow(dead_code)]
-    pub fn intersect_late_out(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
+    pub fn intersect_late_out(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<HitInfo> {
         // Möller-Trumbore algo
 
         let v0v1 = v1 - v0;
@@ -83,11 +95,11 @@ mod moller_trumbore {
             return None;
         }
 
-        Some(t)
+        Some(HitInfo::new(t,u,v))
     }
 
     #[allow(dead_code)]
-    pub fn intersect_later_out(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<f32> {
+    pub fn intersect_later_out(ray: &Ray, v0: &Vertex, v1: &Vertex, v2: &Vertex) -> Option<HitInfo> {
         // Möller-Trumbore algo
 
         let v0v1 = v1 - v0;
@@ -123,6 +135,6 @@ mod moller_trumbore {
             return None;
         }
 
-        Some(t)
+        Some(HitInfo::new(t,u,v))
     }
 }

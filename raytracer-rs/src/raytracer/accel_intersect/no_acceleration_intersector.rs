@@ -15,7 +15,7 @@ impl Intersector for NoAccelerationIntersector {
         let mut closest_hit = None;
 
         for (geom_idx, geom) in scene.geometries.iter().enumerate() {
-            let intersect_distances: Vec<Option<f32>> = geom
+            let intersections: Vec<Option<intersect::HitInfo>> = geom
                 .transformed_vertices
                 .chunks(3)
                 .map(|tri_vertices| {
@@ -23,16 +23,16 @@ impl Intersector for NoAccelerationIntersector {
                 })
                 .collect();
 
-            for (vtx_idx, intersect_distance) in intersect_distances.iter().enumerate() {
-                match (&closest_hit, intersect_distance) {
+            for (vtx_idx, intersection) in intersections.iter().enumerate() {
+                match (&closest_hit, intersection) {
                     (None, None) => (),
                     (Some(_), None) => (),
-                    (None, Some(dist)) => {
-                        closest_hit = Some(Hit::new(*dist, geom_idx, vtx_idx * 3));
+                    (None, Some(hit_info)) => {
+                        closest_hit = Some(Hit::new(hit_info.clone(), geom_idx, vtx_idx * 3));
                     }
-                    (Some(hit), Some(dist)) => {
-                        if *dist < hit.distance {
-                            closest_hit = Some(Hit::new(*dist, geom_idx, vtx_idx * 3));
+                    (Some(hit), Some(hit_info)) => {
+                        if hit_info.t < hit.hit_info.t {
+                            closest_hit = Some(Hit::new(hit_info.clone(), geom_idx, vtx_idx * 3));
                         }
                     }
                 }
