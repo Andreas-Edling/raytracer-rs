@@ -32,8 +32,14 @@ fn generate_events(window: &Window) -> Vec<Event> {
     events
 }
 
-fn main() -> Result<(), String> {
-    let matches = App::new("raytracer-rs")
+struct CmdArgs {
+    max_triangles: usize,
+    frame_iterations: Option<usize>,
+    collada_filename: String,
+}
+impl CmdArgs {
+    pub fn get_cmd_args() -> CmdArgs {
+        let matches = App::new("raytracer-rs")
         .version("0.1.0")
         .author("Andreas Edling")
         .arg(Arg::with_name("collada_file")
@@ -56,24 +62,83 @@ fn main() -> Result<(), String> {
         )
         .get_matches();
 
-    let max_triangles = match matches.value_of("max_triangles") {
-        Some(max_triangles) => max_triangles.parse::<usize>().unwrap_or(raytracer::accel_intersect::oct_tree_intersector::DEFAULT_TRIANGLES_PER_LEAF),
-        None => raytracer::accel_intersect::oct_tree_intersector::DEFAULT_TRIANGLES_PER_LEAF,
-    };
-    println!("max triangles per leaf: {}",max_triangles);
+        let max_triangles = match matches.value_of("max_triangles") {
+            Some(max_triangles) => max_triangles.parse::<usize>().unwrap_or(raytracer::accel_intersect::oct_tree_intersector::DEFAULT_TRIANGLES_PER_LEAF),
+            None => raytracer::accel_intersect::oct_tree_intersector::DEFAULT_TRIANGLES_PER_LEAF,
+        };
+        println!("max triangles per leaf: {}",max_triangles);
+    
+        let frame_iterations = match matches.value_of("frame_iterations") {
+            Some(frame_iterations) => frame_iterations.parse::<usize>().ok(),
+            None => None,
+        };
+        if let Some(frame_iterations) = frame_iterations {
+            println!("will quit after {} frame iterations", frame_iterations);
+        }
+    
+        let collada_filename = match matches.value_of("collada_file") {
+            Some(collada_file) => collada_file,
+            None => "./data/ico3_tex.dae",
+        }.to_string();
 
-    let frame_iterations = match matches.value_of("frame_iterations") {
-        Some(frame_iterations) => frame_iterations.parse::<usize>().ok(),
-        None => None,
-    };
-    if let Some(frame_iterations) = frame_iterations {
-        println!("will quit after {} frame iterations", frame_iterations);
+        CmdArgs{max_triangles, frame_iterations, collada_filename}
     }
+}
 
-    let filename = match matches.value_of("collada_file") {
-        Some(collada_file) => collada_file,
-        None => "./data/ico3_tex.dae",
-    };
+fn handle_events(raytracer: &mut raytracer::RayTracer, events_receiver: &std::sync::mpsc::Receiver<Vec<Event>>) {
+    for events in events_receiver.try_iter() {
+        for event in events {
+            match event {
+                Event::KeyDown(key) => match key {
+                    Key::Left => {
+                        raytracer.camera.move_rel(0.1, 0.0, 0.0);
+                        raytracer.film.clear();
+                    }
+                    Key::Right => {
+                        raytracer.camera.move_rel(-0.1, 0.0, 0.0);
+                        raytracer.film.clear();
+                    }
+                    Key::Up => {
+                        raytracer.camera.move_rel(0.0, 0.1, 0.0);
+                        raytracer.film.clear();
+                    }
+                    Key::Down => {
+                        raytracer.camera.move_rel(0.0, -0.1, 0.0);
+                        raytracer.film.clear();
+                    }
+                    Key::Comma => {
+                        raytracer.camera.move_rel(0.0, 0.0, 0.1);
+                        raytracer.film.clear();
+                    }
+                    Key::Period => {
+                        raytracer.camera.move_rel(0.0, 0.0, -0.1);
+                        raytracer.film.clear();
+                    }
+                    Key::A => {
+                        raytracer.camera.add_y_angle(0.01);
+                        raytracer.film.clear();
+                    }
+                    Key::D => {
+                        raytracer.camera.add_y_angle(-0.01);
+                        raytracer.film.clear();
+                    }
+                    Key::W => {
+                        raytracer.camera.add_x_angle(0.01);
+                        raytracer.film.clear();
+                    }
+                    Key::S => {
+                        raytracer.camera.add_x_angle(-0.01);
+                        raytracer.film.clear();
+                    }
+                    _ => (),
+                },
+            }
+        }
+    }
+}
+
+fn main() -> Result<(), String> {
+    let cmd_args = CmdArgs::get_cmd_args();
 
     // setup
     const WIDTH: usize = 1024;
@@ -90,8 +155,8 @@ fn main() -> Result<(), String> {
     let (shutdown_sender, shutdown_receiver) = std::sync::mpsc::channel();
     let mut fps = Fps::new();
     let mut current_iteration = 0;
-    let scene = ColladaLoader::from_file(filename).map_err(|e| e.to_string())?;
-    let octtree = raytracer::accel_intersect::OctTreeIntersector::with_triangles_per_leaf(&scene, max_triangles);
+    let scene = ColladaLoader::from_file(cmd_args.collada_filename).map_err(|e| e.to_string())?;
+    let octtree = raytracer::accel_intersect::OctTreeIntersector::with_triangles_per_leaf(&scene, cmd_args.max_triangles);
     let mut raytracer = raytracer::RayTracer::new_with_intersector(WIDTH, HEIGHT, scene.cameras[0].clone(), octtree);
 
     // raytracer loop
@@ -136,55 +201,7 @@ fn main() -> Result<(), String> {
                     .recv()
                     .expect("channel copied_frame_reciever failed on recv");
 
-                for events in events_receiver.try_iter() {
-                    for event in events {
-                        match event {
-                            Event::KeyDown(key) => match key {
-                                Key::Left => {
-                                    raytracer.camera.move_rel(0.1, 0.0, 0.0);
-                                    raytracer.film.clear();
-                                }
-                                Key::Right => {
-                                    raytracer.camera.move_rel(-0.1, 0.0, 0.0);
-                                    raytracer.film.clear();
-                                }
-                                Key::Up => {
-                                    raytracer.camera.move_rel(0.0, 0.1, 0.0);
-                                    raytracer.film.clear();
-                                }
-                                Key::Down => {
-                                    raytracer.camera.move_rel(0.0, -0.1, 0.0);
-                                    raytracer.film.clear();
-                                }
-                                Key::Comma => {
-                                    raytracer.camera.move_rel(0.0, 0.0, 0.1);
-                                    raytracer.film.clear();
-                                }
-                                Key::Period => {
-                                    raytracer.camera.move_rel(0.0, 0.0, -0.1);
-                                    raytracer.film.clear();
-                                }
-                                Key::A => {
-                                    raytracer.camera.add_y_angle(0.01);
-                                    raytracer.film.clear();
-                                }
-                                Key::D => {
-                                    raytracer.camera.add_y_angle(-0.01);
-                                    raytracer.film.clear();
-                                }
-                                Key::W => {
-                                    raytracer.camera.add_x_angle(0.01);
-                                    raytracer.film.clear();
-                                }
-                                Key::S => {
-                                    raytracer.camera.add_x_angle(-0.01);
-                                    raytracer.film.clear();
-                                }
-                                _ => (),
-                            },
-                        }
-                    }
-                }
+                handle_events(&mut raytracer, &events_receiver);
 
                 println!("fps: {:?} ", fps.fps());
 
@@ -192,6 +209,8 @@ fn main() -> Result<(), String> {
                     running = false;
                 }
             }
+
+            // Done, print stats
             println!("{}", timer);
             println!("mean fps {}\n\n", fps.mean());
         }
@@ -213,7 +232,7 @@ fn main() -> Result<(), String> {
                 .expect("channel copied_frame_sender failed on send");
 
 
-            if let Some(frame_iterations) = frame_iterations {
+            if let Some(frame_iterations) = cmd_args.frame_iterations {
                 current_iteration += 1;
                 if current_iteration >= frame_iterations {
                     break;
