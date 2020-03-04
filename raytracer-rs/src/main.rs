@@ -153,7 +153,7 @@ fn main() -> Result<(), String> {
         std::sync::mpsc::Receiver<Vec<Event>>,
     ) = std::sync::mpsc::channel();
     let (shutdown_sender, shutdown_receiver) = std::sync::mpsc::channel();
-    let mut fps = Fps::new();
+    let mut stats = Stats::new();
     let mut current_iteration = 0;
     let scene = ColladaLoader::from_file(cmd_args.collada_filename).map_err(|e| e.to_string())?;
     let octtree = raytracer::accel_intersect::OctTreeIntersector::with_triangles_per_leaf(&scene, cmd_args.max_triangles);
@@ -168,7 +168,7 @@ fn main() -> Result<(), String> {
             let mut running = true;
             while running {
                 timer.start("trace_frame_additive");
-                raytracer.trace_frame_additive(&scene, &mut timer);
+                let num_primary_rays = raytracer.trace_frame_additive(&scene, &mut timer);
                 timer.stop("trace_frame_additive");
 
                 timer.start("get_film");
@@ -203,7 +203,7 @@ fn main() -> Result<(), String> {
 
                 handle_events(&mut raytracer, &events_receiver);
 
-                println!("fps: {:?} ", fps.fps());
+                println!("{}",stats.stats(num_primary_rays));
 
                 if shutdown_receiver.try_recv().is_ok() {
                     running = false;
@@ -212,7 +212,7 @@ fn main() -> Result<(), String> {
 
             // Done, print stats
             println!("{}", timer);
-            println!("mean fps {}\n\n", fps.mean());
+            println!("{}\n\n", stats.mean_stats());
         }
     });
 
@@ -264,29 +264,40 @@ fn main() -> Result<(), String> {
     Ok(())
 }
 
-struct Fps {
+struct Stats {
     last_iteration: std::time::Instant,
     fps_sum: f32,
+    primrays_per_sec_sum: f32,
     num_measurements: u32,
 }
 
-impl Fps {
+impl Stats {
     fn new() -> Self {
         let last_iteration = std::time::Instant::now();
-        Fps { last_iteration, fps_sum: 0.0, num_measurements: 0 }
+        Self { 
+            last_iteration, 
+            fps_sum: 0.0, 
+            primrays_per_sec_sum: 0.0, 
+            num_measurements: 0 
+        }
     }
 
-    fn fps(&mut self) -> f32 {
+    fn stats(&mut self, num_primary_rays: u32) -> String {
         let now = std::time::Instant::now();
         let frame_duration: std::time::Duration = now - self.last_iteration;
         self.last_iteration = now;
         let fps = 1.0 / frame_duration.as_secs_f32();
         self.fps_sum += fps;
+        let primrays_per_sec = num_primary_rays as f32 / frame_duration.as_secs_f32();
+        self.primrays_per_sec_sum += primrays_per_sec;
         self.num_measurements += 1;
-        fps
+        format!("fps: {}  primary rays/s: {}", fps, primrays_per_sec as u32)
     }
 
-    fn mean(&self) -> f32 {
-        self.fps_sum / self.num_measurements as f32
+    fn mean_stats(&self) -> String {
+        format!("mean fps: {}  mean primary rays/s: {}",
+            self.fps_sum / self.num_measurements as f32,
+            self.primrays_per_sec_sum / self.num_measurements as f32
+        )
     }
 }

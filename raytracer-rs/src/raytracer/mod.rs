@@ -66,7 +66,7 @@ where Accel: Intersector {
         }
     }
 
-    pub fn trace_frame_additive(&mut self, scene: &Scene, _timer: &mut BenchMark) {
+    pub fn trace_frame_additive(&mut self, scene: &Scene, _timer: &mut BenchMark) -> u32 {
         const RECURSIONS: u8 = 2;
         const SUB_SPREAD: u32 = 1;
 
@@ -93,6 +93,9 @@ where Accel: Intersector {
             };
             pixel_and_sample_count.add_sample(color);
         }
+
+        let num_primary_rays = self.film.pixels_and_sample_counts.len() as u32;
+        return num_primary_rays;
     }
 }
 
