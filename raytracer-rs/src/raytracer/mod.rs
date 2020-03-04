@@ -38,6 +38,8 @@ where
     sample_generator: sample_generator::SampleGenerator,
     pub film: Film,
     accel: Accel,
+
+    current_row: usize,
 }
 
 impl<Accel> RayTracer<Accel> 
@@ -52,6 +54,7 @@ where Accel: Intersector {
             sample_generator: SampleGenerator::new(),
             film: Film::new(width * height),
             accel: Intersector::new(scene),
+            current_row: 0,
         }
     }
 
@@ -63,6 +66,7 @@ where Accel: Intersector {
             sample_generator: SampleGenerator::new(),
             film: Film::new(width * height),
             accel,
+            current_row: 0,
         }
     }
 
@@ -72,29 +76,33 @@ where Accel: Intersector {
 
         let mut rng = rand::thread_rng();
 
-        for (i, pixel_and_sample_count) in self.film.pixels_and_sample_counts.iter_mut().enumerate()
-        {
-            let ray = self
-                .camera
-                .get_ray(i % self.width, i / self.height, &mut rng);
+        let mut num_primary_rays = 0;
+        for _ in 0..50 {
+            for (i, pixel_and_sample_count) in self.film.pixels_and_sample_counts[self.current_row*self.width..(self.current_row+1)*self.width].iter_mut().enumerate()
+            {
+                let idx = self.current_row*self.width + i;
+                let ray = self
+                    .camera
+                    .get_ray(idx % self.width, idx / self.height, &mut rng);
 
-            let hit = self.accel.intersect_ray(&scene, &ray);
-            let color = match hit {
-                None => RGB::black(),
-                Some(ref hit) => compute_radiance(
-                    &self.accel,
-                    &scene,
-                    &ray,
-                    hit,
-                    &mut self.sample_generator,
-                    RECURSIONS,
-                    SUB_SPREAD,
-                ),
-            };
-            pixel_and_sample_count.add_sample(color);
+                let hit = self.accel.intersect_ray(&scene, &ray);
+                let color = match hit {
+                    None => RGB::black(),
+                    Some(ref hit) => compute_radiance(
+                        &self.accel,
+                        &scene,
+                        &ray,
+                        hit,
+                        &mut self.sample_generator,
+                        RECURSIONS,
+                        SUB_SPREAD,
+                    ),
+                };
+                pixel_and_sample_count.add_sample(color);
+            }
+            num_primary_rays += self.width as u32;
+            self.current_row = (self.current_row + 1) % self.height;
         }
-
-        let num_primary_rays = self.film.pixels_and_sample_counts.len() as u32;
         return num_primary_rays;
     }
 }
