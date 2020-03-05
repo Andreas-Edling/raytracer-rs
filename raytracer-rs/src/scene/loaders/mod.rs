@@ -1,20 +1,18 @@
-pub mod boxloader;
 pub mod colladaloader;
 
 use super::Scene;
 use std::{error, fmt, path};
 
 pub trait SceneLoader {
-    fn from_str(doc: &str, data_dir: Option<&path::Path>) -> Result<Scene, SceneLoadError>;
-    fn from_file<P: AsRef<path::Path>>(path: P) -> Result<Scene, SceneLoadError>;
-    fn load() -> Result<Scene, SceneLoadError>;
+    fn from_str(doc: &str, data_dir: Option<&path::Path>, width: usize, height: usize) -> Result<Scene, SceneLoadError>;
+    fn from_file<P: AsRef<path::Path>>(path: P, width: usize, height: usize) -> Result<Scene, SceneLoadError>;
+    //fn load() -> Result<Scene, SceneLoadError>;
 }
 
 #[derive(Debug)]
 pub enum SceneLoadError {
     ColladaLoader(colladaloader::ColladaError),
     TextureLoader(super::texture::TextureLoadError),
-    BoxLoader(String),
     Io(std::io::Error),
 }
 
@@ -42,7 +40,6 @@ impl fmt::Display for SceneLoadError {
             SceneLoadError::ColladaLoader(e) => write!(f, "{}", e.to_string()),
             SceneLoadError::TextureLoader(e) => write!(f, "{}", e.to_string()),
             SceneLoadError::Io(e) => write!(f, "{}", e.to_string()),
-            SceneLoadError::BoxLoader(s) => write!(f, "{}", s),
         }
     }
 }
@@ -52,7 +49,6 @@ impl error::Error for SceneLoadError {
             SceneLoadError::ColladaLoader(e) => Some(e),
             SceneLoadError::TextureLoader(e) => Some(e),
             SceneLoadError::Io(e) => Some(e),
-            SceneLoadError::BoxLoader(_) => None,
         }
     }
 }

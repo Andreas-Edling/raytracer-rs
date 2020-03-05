@@ -20,10 +20,6 @@ pub struct Camera {
 }
 
 impl Camera {
-    pub fn new(width: usize, height: usize, pos: &Vec3, fov_deg: f32) -> Self {
-        let matrix = Matrix::translate(pos);
-        Self::from_orientation_matrix(width, height, &matrix, fov_deg)
-    }
 
     // Note - only rotation and position is expected/used in matrix, no perspective!
     pub fn from_orientation_matrix(

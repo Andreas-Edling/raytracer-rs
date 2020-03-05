@@ -20,23 +20,19 @@ pub use super::{SceneLoadError, SceneLoader};
 pub struct ColladaLoader;
 
 impl SceneLoader for ColladaLoader {
-    fn from_str(doc: &str, data_dir: Option<&path::Path>) -> Result<Scene, SceneLoadError> {
+    fn from_str(doc: &str, data_dir: Option<&path::Path>, width: usize, height: usize) -> Result<Scene, SceneLoadError> {
         let collada = Collada::parse(doc).map_err(SceneLoadError::ColladaLoader)?;
-        let scene = collada.to_scene_flatten(data_dir)?;
+        let scene = collada.to_scene_flatten(data_dir, width, height)?;
         Ok(scene)
     }
 
-    fn from_file<P: AsRef<path::Path>>(path: P) -> Result<Scene, SceneLoadError> {
+    fn from_file<P: AsRef<path::Path>>(path: P, width: usize, height: usize) -> Result<Scene, SceneLoadError> {
         let data_dir = path.as_ref().parent();
         let mut file = File::open(&path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        let scene = ColladaLoader::from_str(&contents, data_dir)?;
+        let scene = ColladaLoader::from_str(&contents, data_dir, width, height)?;
         Ok(scene)
-    }
-
-    fn load() -> Result<Scene, SceneLoadError> {
-        Self::from_str(COLLADA_DOC, None)
     }
 }
 
@@ -129,7 +125,7 @@ impl Collada {
         })
     }
 
-    pub fn to_scene_flatten(&self, data_dir: Option<&path::Path>) -> Result<Scene, SceneLoadError> {
+    pub fn to_scene_flatten(&self, data_dir: Option<&path::Path>, width: usize, height: usize) -> Result<Scene, SceneLoadError> {
         let mut geometries = Vec::new();
         let mut lights = Vec::new();
         let mut cameras = Vec::new();
@@ -153,8 +149,8 @@ impl Collada {
                         continue;
                     }
                     cameras.push(Camera::from_orientation_matrix(
-                        1024,
-                        768,
+                        width,
+                        height,
                         &node.matrix.to_vecmath_matrix(),
                         camera.fov,
                     ));
@@ -717,9 +713,8 @@ mod tests {
         }
         assert!(parsed.is_ok());
     }
-}
 
-const COLLADA_DOC: &str = r##"<?xml version="1.0" encoding="utf-8"?>
+    const COLLADA_DOC: &str = r##"<?xml version="1.0" encoding="utf-8"?>
     <COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <asset>
         <contributor>
@@ -893,3 +888,4 @@ const COLLADA_DOC: &str = r##"<?xml version="1.0" encoding="utf-8"?>
         <instance_visual_scene url="#Scene"/>
     </scene>
     </COLLADA>"##;
+}

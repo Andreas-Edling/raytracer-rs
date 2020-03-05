@@ -12,7 +12,7 @@ use minifb::{Key, Window, WindowOptions};
 use clap::{Arg, App};
 
 #[allow(unused_imports)]
-use scene::loaders::{boxloader::BoxLoader, colladaloader::ColladaLoader, SceneLoader};
+use scene::loaders::{colladaloader::ColladaLoader, SceneLoader};
 
 use timing::BenchMark;
 
@@ -156,7 +156,7 @@ fn main() -> Result<(), String> {
     let (shutdown_sender, shutdown_receiver) = std::sync::mpsc::channel();
     let mut stats = Stats::new();
     let mut current_iteration = 0;
-    let scene = ColladaLoader::from_file(cmd_args.collada_filename).map_err(|e| e.to_string())?;
+    let scene = ColladaLoader::from_file(cmd_args.collada_filename, WIDTH, HEIGHT).map_err(|e| e.to_string())?;
     let octtree = raytracer::accel_intersect::OctTreeIntersector::with_triangles_per_leaf(&scene, cmd_args.max_triangles);
     let mut raytracer = raytracer::RayTracer::new_with_intersector(WIDTH, HEIGHT, scene.cameras[0].clone(), octtree);
 
