@@ -78,7 +78,7 @@ where Accel: Intersector {
 
         let mut num_primary_rays = 0;
         for _ in 0..50 {
-            for (i, pixel_and_sample_count) in self.film.pixels_and_sample_counts[self.current_row*self.width..(self.current_row+1)*self.width].iter_mut().enumerate()
+            for (i, pixel_data) in self.film.pixel_datas[self.current_row*self.width..(self.current_row+1)*self.width].iter_mut().enumerate()
             {
                 let idx = self.current_row*self.width + i;
                 let ray = self
@@ -98,7 +98,7 @@ where Accel: Intersector {
                         SUB_SPREAD,
                     ),
                 };
-                pixel_and_sample_count.add_sample(color);
+                pixel_data.add_sample(color);
             }
             num_primary_rays += self.width as u32;
             self.current_row = (self.current_row + 1) % self.height;

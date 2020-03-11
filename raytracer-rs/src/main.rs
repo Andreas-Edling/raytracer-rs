@@ -173,7 +173,7 @@ fn main() -> Result<(), String> {
                 timer.stop("trace_frame_additive");
 
                 timer.start("get_film");
-                let generated_frame = raytracer.film.get_film();
+                let generated_frame = raytracer.film.get_pixels();
                 timer.stop("get_film");
 
                 timer.start("frame_to_u32");
