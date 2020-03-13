@@ -127,9 +127,11 @@ where
 
     let num_sub_rays = spread * recursions as u32;
 
+    let mut rng = rand::thread_rng(); // TODO move this to new
+
     let sub_radiance = (0..num_sub_rays)
         .map(|_| {
-            let sub_ray = randomize_reflection_ray(sample_generator, hit, ray, &normal);
+            let sub_ray = randomize_reflection_ray(sample_generator, hit, ray, &normal, &mut rng);
 
             let sub_hit = accel.intersect_ray(&scene, &sub_ray);
 
@@ -156,9 +158,10 @@ fn randomize_reflection_ray(
     hit: &Hit,
     ray: &Ray,
     normal: &Vec3,
+    rng: &mut rand::rngs::ThreadRng,
 ) -> Ray {
     // get random direction on hemisphere
-    let mut random_dir = sample_generator.normalized_vec_pseudo();
+    let mut random_dir = sample_generator.normalized_vec_pseudo(rng);
     while dot(&random_dir, normal) <= 0.0 {
         random_dir = sample_generator.normalized_vec_lookup();
     }
