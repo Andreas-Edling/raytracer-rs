@@ -31,9 +31,7 @@ pub struct Film {
 impl Film {
     pub fn new(size: usize) -> Self {
         let pixel_datas = vec![Default::default(); size];
-        Film {
-            pixel_datas,
-        }
+        Film { pixel_datas }
     }
 
     pub fn clear(&mut self) {
@@ -45,10 +43,7 @@ impl Film {
     pub fn get_pixels(&self) -> Vec<RGB> {
         self.pixel_datas
             .iter()
-            .map(|pixel_data| {
-                pixel_data.pixel_sum
-                    * (1.0 / pixel_data.num_samples as f32)
-            })
+            .map(|pixel_data| pixel_data.pixel_sum * (1.0 / pixel_data.num_samples as f32))
             .collect()
     }
 
@@ -57,7 +52,8 @@ impl Film {
         self.pixel_datas
             .iter()
             .map(|pixel_data| {
-                let n_times_n_minus_1 = (pixel_data.num_samples * (pixel_data.num_samples-1)) as f32;
+                let n_times_n_minus_1 =
+                    (pixel_data.num_samples * (pixel_data.num_samples - 1)) as f32;
                 let n_squared_times_n_minus_1 = pixel_data.num_samples as f32 * n_times_n_minus_1;
                 let variance_r = pixel_data.pixel_sum_squared.r / n_times_n_minus_1
                     - pixel_data.pixel_sum.r * pixel_data.pixel_sum.r / n_squared_times_n_minus_1;
@@ -65,9 +61,8 @@ impl Film {
                     - pixel_data.pixel_sum.g * pixel_data.pixel_sum.g / n_squared_times_n_minus_1;
                 let variance_b = pixel_data.pixel_sum_squared.b / n_times_n_minus_1
                     - pixel_data.pixel_sum.b * pixel_data.pixel_sum.b / n_squared_times_n_minus_1;
-                RGB::new(variance_r*50.0, variance_g*50.0, variance_b*50.0)
+                RGB::new(variance_r * 50.0, variance_g * 50.0, variance_b * 50.0)
             })
             .collect()
-
     }
 }

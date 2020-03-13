@@ -1,8 +1,7 @@
+use super::Intersector;
 use crate::raytracer::{intersect, Hit};
 use crate::scene::Scene;
 use crate::vecmath::Ray;
-use super::Intersector;
-
 
 // no acceleration for intersections, just iterates through all the geometries' triangles.
 pub struct NoAccelerationIntersector {}

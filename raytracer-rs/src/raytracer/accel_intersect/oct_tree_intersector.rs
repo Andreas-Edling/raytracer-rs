@@ -1,7 +1,7 @@
+use super::Intersector;
 use crate::raytracer::{intersect, Hit};
 use crate::scene::Scene;
 use crate::vecmath::{cross, dot, Ray, Vec3};
-use super::Intersector;
 
 pub struct OctTreeIntersector {
     cubes: Vec<Cube>,
@@ -30,12 +30,16 @@ impl Cube {
     fn new(min: Vec3, max: Vec3) -> Self {
         Cube { min, max }
     }
-    
+
     fn contains(&self, v: &Vec3) -> bool {
-        if v.x < self.min.x || v.x > self.max.x ||
-           v.y < self.min.y || v.y > self.max.y ||
-           v.z < self.min.z || v.z > self.max.z {
-              return false; 
+        if v.x < self.min.x
+            || v.x > self.max.x
+            || v.y < self.min.y
+            || v.y > self.max.y
+            || v.z < self.min.z
+            || v.z > self.max.z
+        {
+            return false;
         }
         true
     }
@@ -60,20 +64,20 @@ enum OctNode {
 
 impl OctTreeIntersector {
     pub fn with_triangles_per_leaf(scene: &Scene, triangles_per_leaf: usize) -> Self {
-            let trunk_cube = calc_extents(&scene);
-            let all_triangle_indices = all_triangle_indices(&scene);
-            let trunk = 0;
-            let leaf = Leaf::new(trunk, all_triangle_indices);
-            let nodes = vec![OctNode::Leaf(leaf)];
-            let mut octtree = Self {
-                cubes: vec![trunk_cube],
-                nodes,
-                trunk,
-            };
-    
-            octtree.split(triangles_per_leaf, scene);
-            //octtree.print_debug_info();
-            octtree
+        let trunk_cube = calc_extents(&scene);
+        let all_triangle_indices = all_triangle_indices(&scene);
+        let trunk = 0;
+        let leaf = Leaf::new(trunk, all_triangle_indices);
+        let nodes = vec![OctNode::Leaf(leaf)];
+        let mut octtree = Self {
+            cubes: vec![trunk_cube],
+            nodes,
+            trunk,
+        };
+
+        octtree.split(triangles_per_leaf, scene);
+        //octtree.print_debug_info();
+        octtree
     }
 
     fn split(&mut self, num_triangles: usize, scene: &Scene) {
@@ -130,7 +134,14 @@ impl OctTreeIntersector {
         let start_idx_new_nodes = nodes.len();
         nodes.append(&mut new_nodes);
         for child_node_idx in start_idx_new_nodes..start_idx_new_nodes + 8 {
-            Self::split_node(child_node_idx, nodes, cubes, num_triangles, &scene, recurse_level+1);
+            Self::split_node(
+                child_node_idx,
+                nodes,
+                cubes,
+                num_triangles,
+                &scene,
+                recurse_level + 1,
+            );
         }
     }
 
@@ -147,8 +158,8 @@ impl OctTreeIntersector {
                     None => None,
                     Some(hit) => {
                         // Since we arent splitting triangles in the octtree, the hit point on the triangle
-                        // might actually lay outside of this cube, in some other cube to be intersected later. 
-                        // In that case, there might be another triangle closer in the next cube, so we get a faulty result. 
+                        // might actually lay outside of this cube, in some other cube to be intersected later.
+                        // In that case, there might be another triangle closer in the next cube, so we get a faulty result.
                         // We need to check that the hit point actually is in this cube, or return None.
                         let hit_point = ray.pos + ray.dir * hit.hit_info.t;
                         if self.cubes[node_idx].contains(&hit_point) {
@@ -158,7 +169,7 @@ impl OctTreeIntersector {
                         }
                     }
                 }
-            },
+            }
 
             OctNode::Node(ref child_indices) => {
                 // check children for intersections and order them
@@ -190,11 +201,8 @@ impl OctTreeIntersector {
         //     // entry & exit on parallel planes
         //     //  -we can find the between-planes intersection point trivially
 
-
         //     // entry & exit are on orthogonal planes
         // }
-
-
     }
 
     #[allow(dead_code)]
@@ -228,7 +236,7 @@ impl Intersector for OctTreeIntersector {
     fn new(scene: &Scene) -> Self {
         OctTreeIntersector::with_triangles_per_leaf(scene, DEFAULT_TRIANGLES_PER_LEAF)
     }
- 
+
     fn intersect_ray(&self, scene: &Scene, ray: &Ray) -> Option<Hit> {
         let inv_ray = Ray::new(
             ray.pos,
@@ -244,12 +252,15 @@ fn intersect_leaf_triangles(scene: &Scene, ray: &Ray, leaf: &Leaf) -> Option<Hit
     for index in &leaf.triangle_indices {
         let tri_vertices = &scene.geometries[index.geom_idx].transformed_vertices
             [index.tri_idx..index.tri_idx + 3];
-        let hit_info = intersect::intersect(ray, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]);
+        let hit_info =
+            intersect::intersect(ray, &tri_vertices[0], &tri_vertices[1], &tri_vertices[2]);
 
         match (&closest_hit, &hit_info) {
             (None, None) => (),
             (Some(_), None) => (),
-            (None, Some(hit_info)) => closest_hit = Some(Hit::new(hit_info.clone(), index.geom_idx, index.tri_idx)),
+            (None, Some(hit_info)) => {
+                closest_hit = Some(Hit::new(hit_info.clone(), index.geom_idx, index.tri_idx))
+            }
             (Some(hit), Some(hit_info)) => {
                 if hit_info.t < hit.hit_info.t {
                     closest_hit = Some(Hit::new(hit_info.clone(), index.geom_idx, index.tri_idx))
@@ -330,7 +341,6 @@ fn all_triangle_indices(scene: &Scene) -> Vec<TriangleIndex> {
         .collect::<Vec<_>>()
 }
 
-
 // returns t as dist along closest axis.
 // returns negative t if origin is inside cube.
 // None for no intersection.
@@ -372,8 +382,7 @@ fn triangles_intersecting_cube(
             cube,
             &scene.geometries[indices.geom_idx].transformed_vertices
                 [indices.tri_idx..indices.tri_idx + 3],
-        )
-        {
+        ) {
             insiders.push(indices.clone());
             continue;
         }

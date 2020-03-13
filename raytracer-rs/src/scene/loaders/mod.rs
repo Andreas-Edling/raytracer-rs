@@ -4,8 +4,17 @@ use super::Scene;
 use std::{error, fmt, path};
 
 pub trait SceneLoader {
-    fn from_str(doc: &str, data_dir: Option<&path::Path>, width: usize, height: usize) -> Result<Scene, SceneLoadError>;
-    fn from_file<P: AsRef<path::Path>>(path: P, width: usize, height: usize) -> Result<Scene, SceneLoadError>;
+    fn from_str(
+        doc: &str,
+        data_dir: Option<&path::Path>,
+        width: usize,
+        height: usize,
+    ) -> Result<Scene, SceneLoadError>;
+    fn from_file<P: AsRef<path::Path>>(
+        path: P,
+        width: usize,
+        height: usize,
+    ) -> Result<Scene, SceneLoadError>;
     //fn load() -> Result<Scene, SceneLoadError>;
 }
 

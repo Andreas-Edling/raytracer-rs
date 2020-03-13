@@ -3,12 +3,12 @@ mod film;
 mod intersect;
 mod sample_generator;
 
-use crate::scene::{camera::Camera, color::RGB, color::Diffuse, Ray, Scene};
+use crate::scene::{camera::Camera, color::Diffuse, color::RGB, Ray, Scene};
 use crate::vecmath::{cross, dot, Vec3};
 
-use intersect::HitInfo;
 use accel_intersect::*;
 use film::Film;
+use intersect::HitInfo;
 use sample_generator::SampleGenerator;
 use timing::BenchMark;
 
@@ -42,9 +42,10 @@ where
     current_row: usize,
 }
 
-impl<Accel> RayTracer<Accel> 
-where Accel: Intersector {
-    
+impl<Accel> RayTracer<Accel>
+where
+    Accel: Intersector,
+{
     #[allow(dead_code)]
     pub fn new(width: usize, height: usize, camera: Camera, scene: &Scene) -> Self {
         RayTracer {
@@ -78,9 +79,12 @@ where Accel: Intersector {
 
         let mut num_primary_rays = 0;
         for _ in 0..50 {
-            for (i, pixel_data) in self.film.pixel_datas[self.current_row*self.width..(self.current_row+1)*self.width].iter_mut().enumerate()
+            for (i, pixel_data) in self.film.pixel_datas
+                [self.current_row * self.width..(self.current_row + 1) * self.width]
+                .iter_mut()
+                .enumerate()
             {
-                let idx = self.current_row*self.width + i;
+                let idx = self.current_row * self.width + i;
                 let ray = self
                     .camera
                     .get_ray(idx % self.width, idx / self.height, &mut rng);
@@ -182,8 +186,10 @@ fn calc_normal(scene: &Scene, hit: &Hit) -> Vec3 {
     normal.normalized()
 }
 
-fn shade<Accel>(accel: &Accel, scene: &Scene, ray: &Ray, hit: &Hit, normal: &Vec3) -> RGB 
-where Accel: Intersector {
+fn shade<Accel>(accel: &Accel, scene: &Scene, ray: &Ray, hit: &Hit, normal: &Vec3) -> RGB
+where
+    Accel: Intersector,
+{
     let mut accum_color = RGB::black();
     let hit_point = ray.pos + hit.hit_info.t * ray.dir;
 
@@ -197,16 +203,17 @@ where Accel: Intersector {
 
         //is light blocked by geometry?
         let mut blocked = false;
-        let ray_to_light_offseted = Ray::new(ray_to_light.pos + ray_to_light.dir * 0.01, ray_to_light.dir);
+        let ray_to_light_offseted =
+            Ray::new(ray_to_light.pos + ray_to_light.dir * 0.01, ray_to_light.dir);
         if let Some(hit) = accel.intersect_ray(&scene, &ray_to_light_offseted) {
             if hit.hit_info.t > 0.01 && hit.hit_info.t < 1.0 {
                 blocked = true;
             }
         }
-        
+
         // for geom in &scene.geometries {
         //     for tri_vertices in geom.vertices.chunks(3) {
-        //         if let Some(t) = intersect::intersect_later_out( 
+        //         if let Some(t) = intersect::intersect_later_out(
         //             &ray_to_light,
         //             &tri_vertices[0],
         //             &tri_vertices[1],
@@ -238,11 +245,13 @@ where Accel: Intersector {
                     }
                 };
 
-
                 const SHININESS: f32 = 32.0;
                 let view_ray = ray.dir.normalized();
-                let reflected_light = 2.0*dot_light_normal*normal - ray_to_light.dir.normalized();
-                accum_color += (diffuse_rgb*dot_light_normal + SPECULAR*dot(&view_ray, &reflected_light).powf(SHININESS)) * light.color;
+                let reflected_light =
+                    2.0 * dot_light_normal * normal - ray_to_light.dir.normalized();
+                accum_color += (diffuse_rgb * dot_light_normal
+                    + SPECULAR * dot(&view_ray, &reflected_light).powf(SHININESS))
+                    * light.color;
             }
         }
     }

@@ -20,7 +20,6 @@ pub struct Camera {
 }
 
 impl Camera {
-
     // Note - only rotation and position is expected/used in matrix, no perspective!
     pub fn from_orientation_matrix(
         width: usize,

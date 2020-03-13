@@ -32,8 +32,6 @@ impl RGB {
             b: 0.5,
         }
     }
-
-
 }
 
 impl Default for RGB {
@@ -100,7 +98,7 @@ impl RGBA {
 #[derive(Debug, Clone)]
 pub enum Diffuse {
     Color(RGB),
-    TextureId(usize) 
+    TextureId(usize),
 }
 
 impl Default for Diffuse {

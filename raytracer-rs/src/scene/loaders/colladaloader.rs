@@ -1,18 +1,18 @@
-use std::{error::Error, fmt, fs::File, path, io::prelude::*};
+use std::{error::Error, fmt, fs::File, io::prelude::*, path};
 
 use parseval::{parsers::*, xml};
 
 use crate::scene::{
     camera::Camera,
-    color::{RGB, RGBA, Diffuse},
+    color::{Diffuse, RGB, RGBA},
     texture::{Texture, TextureLoader},
     Geometry, Light, Material, Scene, Vec3, Vertex,
 };
 
 mod collada_types;
 use collada_types::{
-    ColladaCamera, ColladaEffect, ColladaDiffuseOrTexImageId, ColladaGeometry, ColladaLight, ColladaMaterial, ColladaImage, ColladaMatrix,
-    ColladaVisualScene, ColladaVisualSceneNode,
+    ColladaCamera, ColladaDiffuseOrTexImageId, ColladaEffect, ColladaGeometry, ColladaImage,
+    ColladaLight, ColladaMaterial, ColladaMatrix, ColladaVisualScene, ColladaVisualSceneNode,
 };
 
 pub use super::{SceneLoadError, SceneLoader};
@@ -20,13 +20,22 @@ pub use super::{SceneLoadError, SceneLoader};
 pub struct ColladaLoader;
 
 impl SceneLoader for ColladaLoader {
-    fn from_str(doc: &str, data_dir: Option<&path::Path>, width: usize, height: usize) -> Result<Scene, SceneLoadError> {
+    fn from_str(
+        doc: &str,
+        data_dir: Option<&path::Path>,
+        width: usize,
+        height: usize,
+    ) -> Result<Scene, SceneLoadError> {
         let collada = Collada::parse(doc).map_err(SceneLoadError::ColladaLoader)?;
         let scene = collada.to_scene_flatten(data_dir, width, height)?;
         Ok(scene)
     }
 
-    fn from_file<P: AsRef<path::Path>>(path: P, width: usize, height: usize) -> Result<Scene, SceneLoadError> {
+    fn from_file<P: AsRef<path::Path>>(
+        path: P,
+        width: usize,
+        height: usize,
+    ) -> Result<Scene, SceneLoadError> {
         let data_dir = path.as_ref().parent();
         let mut file = File::open(&path)?;
         let mut contents = String::new();
@@ -125,7 +134,12 @@ impl Collada {
         })
     }
 
-    pub fn to_scene_flatten(&self, data_dir: Option<&path::Path>, width: usize, height: usize) -> Result<Scene, SceneLoadError> {
+    pub fn to_scene_flatten(
+        &self,
+        data_dir: Option<&path::Path>,
+        width: usize,
+        height: usize,
+    ) -> Result<Scene, SceneLoadError> {
         let mut geometries = Vec::new();
         let mut lights = Vec::new();
         let mut cameras = Vec::new();
@@ -133,14 +147,13 @@ impl Collada {
 
         for image in &self.images {
             let image_path = if let Some(data_dir) = data_dir {
-                    data_dir.join(&image.image_filename)
-                } else {
-                    path::PathBuf::from(&image.image_filename)
-                };
+                data_dir.join(&image.image_filename)
+            } else {
+                path::PathBuf::from(&image.image_filename)
+            };
             let tex = Texture::from_file(image_path)?;
             textures.push(tex);
         }
-
 
         for visual_scene in &self.visual_scenes {
             for node in &visual_scene.nodes {
@@ -214,10 +227,17 @@ impl Collada {
                                 None => Material::default(),
                                 Some(collada_effect) => {
                                     let diffuse = match &collada_effect.diffuse_or_tex {
-                                        ColladaDiffuseOrTexImageId::Diffuse(rgba) => Diffuse::Color((*rgba).into()),
+                                        ColladaDiffuseOrTexImageId::Diffuse(rgba) => {
+                                            Diffuse::Color((*rgba).into())
+                                        }
                                         ColladaDiffuseOrTexImageId::TexImageId(image_id) => {
-                                            let pos = self.images.iter().position(|img| &img.id == image_id)
-                                                .ok_or(ColladaError::MaterialsConversion("can't find texture name".to_string()))?; 
+                                            let pos = self
+                                                .images
+                                                .iter()
+                                                .position(|img| &img.id == image_id)
+                                                .ok_or(ColladaError::MaterialsConversion(
+                                                    "can't find texture name".to_string(),
+                                                ))?;
                                             Diffuse::TextureId(pos)
                                         }
                                     };
@@ -228,7 +248,7 @@ impl Collada {
                                         specular: collada_effect.specular,
                                         index_of_refraction: collada_effect.index_of_refraction,
                                     }
-                                },
+                                }
                             },
                         }
                     };
@@ -244,14 +264,12 @@ impl Collada {
             .fold(0, |accum, geom| accum + geom.vertices.len() / 3);
         println!("number of triangles: {}", tri_count);
 
-        Ok(
-            Scene {
-                geometries,
-                lights,
-                cameras,
-                textures,
-            }
-        )
+        Ok(Scene {
+            geometries,
+            lights,
+            cameras,
+            textures,
+        })
     }
 }
 
@@ -361,36 +379,33 @@ fn to_effects(elem: &xml::Element) -> Result<Vec<ColladaEffect>, ColladaError> {
             let diffuse_or_tex = {
                 let diffuse_elem = lambert_elem.get_child_by_name("diffuse")?;
                 if let Ok(color_elem) = diffuse_elem.get_child_by_name("color") {
-                    let color_str = color_elem
-                        .get_as_data()
-                        .map_err(|_| {
-                            ColladaError::EffectsConversion("Cant get diffuse color".to_string())
-                        })?;
+                    let color_str = color_elem.get_as_data().map_err(|_| {
+                        ColladaError::EffectsConversion("Cant get diffuse color".to_string())
+                    })?;
 
                     let (_, color_array) = array_f32().parse(color_str)?;
-                    ColladaDiffuseOrTexImageId::Diffuse(
-                        RGBA::new(
-                            color_array[0],
-                            color_array[1],
-                            color_array[2],
-                            color_array[3],
-                        )
-                    )
-                }
-                else {
+                    ColladaDiffuseOrTexImageId::Diffuse(RGBA::new(
+                        color_array[0],
+                        color_array[1],
+                        color_array[2],
+                        color_array[3],
+                    ))
+                } else {
                     // It's not a color, its a texture;
-                    //  From texture (sampler name) to sampler to surface to image_id. 
+                    //  From texture (sampler name) to sampler to surface to image_id.
                     //  image_id is later used to find filename
                     let tex_elem = diffuse_elem.get_child_by_name("texture")?;
                     let _texcoord_source = tex_elem.get_attrib_value("texcoord")?;
                     let sampler_name = tex_elem.get_attrib_value("texture")?.to_string();
                     let surface_name = effect_elem
                         .get_child_by_name("profile_COMMON")?
-                        .get_child_by_attrib(("sid",sampler_name))?
+                        .get_child_by_attrib(("sid", sampler_name))?
                         .get_child_by_name("sampler2D")?
                         .get_child_by_name("source")?
                         .get_as_data()
-                        .map_err(|_| ColladaError::EffectsConversion("Cant get sampler".to_string()))?
+                        .map_err(|_| {
+                            ColladaError::EffectsConversion("Cant get sampler".to_string())
+                        })?
                         .to_string();
 
                     let image_id = effect_elem
@@ -399,7 +414,9 @@ fn to_effects(elem: &xml::Element) -> Result<Vec<ColladaEffect>, ColladaError> {
                         .get_child_by_name("surface")?
                         .get_child_by_name("init_from")?
                         .get_as_data()
-                        .map_err(|_| ColladaError::EffectsConversion("Cant get surface".to_string()))?
+                        .map_err(|_| {
+                            ColladaError::EffectsConversion("Cant get surface".to_string())
+                        })?
                         .to_string();
 
                     ColladaDiffuseOrTexImageId::TexImageId(image_id)
@@ -459,7 +476,7 @@ fn to_images(elem: &xml::Element) -> Result<Vec<ColladaImage>, ColladaError> {
                 .get_as_data()?
                 .to_string();
 
-            images.push(ColladaImage{id, image_filename});
+            images.push(ColladaImage { id, image_filename });
         }
         return Ok(images);
     }

@@ -1,8 +1,7 @@
-
 use super::color;
 use image;
 
-use std::{io, fmt, error};
+use std::{error, fmt, io};
 
 pub struct Texture {
     width: usize,
@@ -20,12 +19,11 @@ impl Texture {
     }
 
     pub fn get_texel(&self, u: f32, v: f32) -> &color::RGB {
-
         // nearest neighbour "filtering"
         let x = (u * self.width as f32) as usize;
         let y = (v * self.height as f32) as usize;
 
-        &self.data[y*self.width + x]
+        &self.data[y * self.width + x]
     }
 }
 
@@ -36,15 +34,18 @@ pub trait TextureLoader {
 impl TextureLoader for Texture {
     fn from_file<P: AsRef<std::path::Path>>(path: P) -> Result<Texture, TextureLoadError> {
         let image = image::open(path)?.to_rgb();
-        let (w,h) = image.dimensions();
-        let data = image.pixels().map(|pix| {
-            color::RGB::new(
-                pix[0] as f32 / 256.0,
-                pix[1] as f32 / 256.0,
-                pix[2] as f32 / 256.0,
-            )
-        }).collect();
-        Ok(Texture::new(w as usize,h as usize, data))
+        let (w, h) = image.dimensions();
+        let data = image
+            .pixels()
+            .map(|pix| {
+                color::RGB::new(
+                    pix[0] as f32 / 256.0,
+                    pix[1] as f32 / 256.0,
+                    pix[2] as f32 / 256.0,
+                )
+            })
+            .collect();
+        Ok(Texture::new(w as usize, h as usize, data))
     }
 }
 

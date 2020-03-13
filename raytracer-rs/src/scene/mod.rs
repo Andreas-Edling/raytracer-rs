@@ -5,7 +5,7 @@ pub mod texture;
 
 pub use crate::vecmath::*;
 use camera::Camera;
-use color::{RGB, Diffuse};
+use color::{Diffuse, RGB};
 
 pub type Vertex = Vec3;
 
