@@ -17,6 +17,10 @@ use scene::loaders::{colladaloader::ColladaLoader, SceneLoader};
 use raytracer::RayTracer;
 use stats::Stats;
 
+const DEFAULT_WIDTH: usize = 1024;
+const DEFAULT_HEIGHT: usize = 768;
+const DEFAULT_COLLADA_FILE: &str = "./data/thai2.dae";
+
 #[derive(Debug, Clone, Copy)]
 enum Event {
     KeyDown(Key),
@@ -37,6 +41,8 @@ struct CmdArgs {
     max_triangles: usize,
     frame_iterations: Option<usize>,
     collada_filename: String,
+    width: usize,
+    height: usize,
 }
 impl CmdArgs {
     pub fn get_cmd_args() -> CmdArgs {
@@ -61,6 +67,18 @@ impl CmdArgs {
             .value_name("FRAME_ITERATIONS")
             .help("sets a bound on how many frame iterations should be calculated.")
         )
+        .arg(Arg::with_name("width")
+            .short("w")
+            .long("width")
+            .value_name("WIDTH")
+            .help("sets width of output")
+        )
+        .arg(Arg::with_name("height")
+            .short("h")
+            .long("height")
+            .value_name("HEIGHT")
+            .help("sets height of output")
+        )
         .get_matches();
 
         let max_triangles = match matches.value_of("max_triangles") {
@@ -79,10 +97,19 @@ impl CmdArgs {
             println!("will quit after {} frame iterations", frame_iterations);
         }
 
+        let width = match matches.value_of("width") {
+            Some(width) => width.parse::<usize>().unwrap_or(DEFAULT_WIDTH),
+            None => DEFAULT_WIDTH,
+        };
+
+        let height = match matches.value_of("height") {
+            Some(height) => height.parse::<usize>().unwrap_or(DEFAULT_HEIGHT),
+            None => DEFAULT_HEIGHT,
+        };
+
         let collada_filename = match matches.value_of("collada_file") {
             Some(collada_file) => collada_file,
-            //None => "./data/ico3_tex.dae",
-            None => "./data/thai2.dae",
+            None => DEFAULT_COLLADA_FILE,
         }
         .to_string();
 
@@ -90,6 +117,8 @@ impl CmdArgs {
             max_triangles,
             frame_iterations,
             collada_filename,
+            width,
+            height,
         }
     }
 }
@@ -173,11 +202,10 @@ fn main() -> Result<(), String> {
     let cmd_args = CmdArgs::get_cmd_args();
 
     // setup
-    const WIDTH: usize = 1024;
-    const HEIGHT: usize = 768;
-    let mut window = Window::new("raytracer-rs", WIDTH, HEIGHT, WindowOptions::default())
+    let (width, height) = (cmd_args.width, cmd_args.height);
+    let mut window = Window::new("raytracer-rs", width, height, WindowOptions::default())
         .map_err(|e| e.to_string())?;
-    let frame = Arc::new(RwLock::new(vec![0u32; WIDTH * HEIGHT]));
+    let frame = Arc::new(RwLock::new(vec![0u32; width*height]));
     let (copy_frame_sender, copy_frame_reciever) = channel();
     let (copied_frame_sender, copied_frame_reciever) = channel();
     let (events_sender, events_receiver): (
@@ -187,8 +215,11 @@ fn main() -> Result<(), String> {
     let (shutdown_sender, shutdown_receiver) = std::sync::mpsc::channel();
     let mut stats = Stats::new();
     let mut current_iteration = 0;
-
-    let mut raytracer = create_raytracer(cmd_args.collada_filename, cmd_args.max_triangles, WIDTH, HEIGHT)?;
+    let mut raytracer = create_raytracer(
+        cmd_args.collada_filename, 
+        cmd_args.max_triangles, 
+        width, 
+        height)?;
 
     // raytracer loop
     let raytracer_thread = std::thread::spawn({
@@ -231,7 +262,7 @@ fn main() -> Result<(), String> {
                 }
             }
 
-            // Done, print stats
+            // Done, print mean stats
             println!("{}\n\n", stats.mean_stats());
         }
     });
@@ -245,7 +276,7 @@ fn main() -> Result<(), String> {
             {
                 let frame_r = frame.read().unwrap();
                 window
-                    .update_with_buffer_size(&frame_r, WIDTH, HEIGHT)
+                    .update_with_buffer_size(&frame_r, width, height)
                     .unwrap();
             }
             copied_frame_sender
