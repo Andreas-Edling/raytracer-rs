@@ -107,7 +107,7 @@ where
             num_primary_rays += self.width as u32;
             self.current_row = (self.current_row + 1) % self.height;
         }
-        return num_primary_rays;
+        num_primary_rays
     }
 }
 

@@ -235,7 +235,7 @@ impl Collada {
                                                 .images
                                                 .iter()
                                                 .position(|img| &img.id == image_id)
-                                                .ok_or(ColladaError::MaterialsConversion(
+                                                .ok_or_else(|| ColladaError::MaterialsConversion(
                                                     "can't find texture name".to_string(),
                                                 ))?;
                                             Diffuse::TextureId(pos)
