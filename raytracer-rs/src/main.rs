@@ -149,17 +149,23 @@ fn handle_events(
     }
 }
 
-fn create_raytracer(scene: &scene::Scene, triangles_per_leaf: usize, width: usize, height: usize) -> RayTracer {
+fn create_raytracer(collada_filename: String, triangles_per_leaf: usize, width: usize, height: usize) -> Result<RayTracer, String> {
+    let scene = ColladaLoader::from_file(collada_filename, width, height)
+        .map_err(|e| e.to_string())?;
+
     let octtree = raytracer::accel_intersect::OctTreeIntersector::with_triangles_per_leaf(
         &scene,
         triangles_per_leaf,
     );
     
-    RayTracer::new_with_intersector(
-        width,
-        height,
-        scene.cameras[0].clone(),
-        octtree,
+    Ok(
+        RayTracer::new_with_intersector(
+            width,
+            height,
+            scene.cameras[0].clone(),
+            octtree,
+            scene,
+        )
     )
 }
 
@@ -182,9 +188,7 @@ fn main() -> Result<(), String> {
     let mut stats = Stats::new();
     let mut current_iteration = 0;
 
-    let scene = ColladaLoader::from_file(cmd_args.collada_filename, WIDTH, HEIGHT)
-        .map_err(|e| e.to_string())?;
-    let mut raytracer = create_raytracer(&scene, cmd_args.max_triangles, WIDTH, HEIGHT);
+    let mut raytracer = create_raytracer(cmd_args.collada_filename, cmd_args.max_triangles, WIDTH, HEIGHT)?;
 
     // raytracer loop
     let raytracer_thread = std::thread::spawn({
@@ -192,7 +196,7 @@ fn main() -> Result<(), String> {
         move || {
             let mut running = true;
             while running {
-                let num_primary_rays = raytracer.trace_frame_additive(&scene);
+                let num_primary_rays = raytracer.trace_frame_additive();
 
                 let generated_frame = raytracer.film.get_pixels();
 

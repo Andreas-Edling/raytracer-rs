@@ -39,6 +39,8 @@ where
     accel: Accel,
 
     current_row: usize,
+
+    scene: Scene,
 }
 
 impl<Accel> RayTracer<Accel>
@@ -46,19 +48,20 @@ where
     Accel: Intersector,
 {
     #[allow(dead_code)]
-    pub fn new(width: usize, height: usize, camera: Camera, scene: &Scene) -> Self {
+    pub fn new(width: usize, height: usize, camera: Camera, scene: Scene) -> Self {
         RayTracer {
             width,
             height,
             camera,
             sample_generator: SampleGenerator::new(),
             film: Film::new(width * height),
-            accel: Intersector::new(scene),
+            accel: Intersector::new(&scene),
             current_row: 0,
+            scene,
         }
     }
 
-    pub fn new_with_intersector(width: usize, height: usize, camera: Camera, accel: Accel) -> Self {
+    pub fn new_with_intersector(width: usize, height: usize, camera: Camera, accel: Accel, scene: Scene) -> Self {
         RayTracer {
             width,
             height,
@@ -67,10 +70,11 @@ where
             film: Film::new(width * height),
             accel,
             current_row: 0,
+            scene,
         }
     }
 
-    pub fn trace_frame_additive(&mut self, scene: &Scene) -> u32 {
+    pub fn trace_frame_additive(&mut self) -> u32 {
         const RECURSIONS: u8 = 2;
         const SUB_SPREAD: u32 = 1;
 
@@ -88,12 +92,12 @@ where
                     .camera
                     .get_ray(idx % self.width, idx / self.height, &mut rng);
 
-                let hit = self.accel.intersect_ray(&scene, &ray);
+                let hit = self.accel.intersect_ray(&self.scene, &ray);
                 let color = match hit {
                     None => RGB::black(),
                     Some(ref hit) => compute_radiance(
                         &self.accel,
-                        &scene,
+                        &self.scene,
                         &ray,
                         hit,
                         &mut self.sample_generator,
