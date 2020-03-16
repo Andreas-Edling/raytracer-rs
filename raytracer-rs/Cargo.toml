@@ -13,4 +13,3 @@ minifb = "0.14.0"
 clap = "2.33.0"
 image = "0.23.0"
 parseval ={ path = "../parseval"}
-timing ={ path = "../timing"}

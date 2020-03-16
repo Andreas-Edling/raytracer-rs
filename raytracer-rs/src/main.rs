@@ -14,8 +14,7 @@ use minifb::{Key, Window, WindowOptions};
 
 #[allow(unused_imports)]
 use scene::loaders::{colladaloader::ColladaLoader, SceneLoader};
-
-use timing::BenchMark;
+use raytracer::RayTracer;
 use stats::Stats;
 
 #[derive(Debug, Clone, Copy)]
@@ -96,7 +95,7 @@ impl CmdArgs {
 }
 
 fn handle_events(
-    raytracer: &mut raytracer::RayTracer,
+    raytracer: &mut RayTracer,
     events_receiver: &std::sync::mpsc::Receiver<Vec<Event>>,
 ) {
     for events in events_receiver.try_iter() {
@@ -150,6 +149,20 @@ fn handle_events(
     }
 }
 
+fn create_raytracer(scene: &scene::Scene, triangles_per_leaf: usize, width: usize, height: usize) -> RayTracer {
+    let octtree = raytracer::accel_intersect::OctTreeIntersector::with_triangles_per_leaf(
+        &scene,
+        triangles_per_leaf,
+    );
+    
+    RayTracer::new_with_intersector(
+        width,
+        height,
+        scene.cameras[0].clone(),
+        octtree,
+    )
+}
+
 fn main() -> Result<(), String> {
     let cmd_args = CmdArgs::get_cmd_args();
 
@@ -168,50 +181,32 @@ fn main() -> Result<(), String> {
     let (shutdown_sender, shutdown_receiver) = std::sync::mpsc::channel();
     let mut stats = Stats::new();
     let mut current_iteration = 0;
+
     let scene = ColladaLoader::from_file(cmd_args.collada_filename, WIDTH, HEIGHT)
         .map_err(|e| e.to_string())?;
-    let octtree = raytracer::accel_intersect::OctTreeIntersector::with_triangles_per_leaf(
-        &scene,
-        cmd_args.max_triangles,
-    );
-    let mut raytracer = raytracer::RayTracer::new_with_intersector(
-        WIDTH,
-        HEIGHT,
-        scene.cameras[0].clone(),
-        octtree,
-    );
+    let mut raytracer = create_raytracer(&scene, cmd_args.max_triangles, WIDTH, HEIGHT);
 
     // raytracer loop
     let raytracer_thread = std::thread::spawn({
         let frame = Arc::clone(&frame);
         move || {
-            let mut timer = BenchMark::new();
-
             let mut running = true;
             while running {
-                timer.start("trace_frame_additive");
-                let num_primary_rays = raytracer.trace_frame_additive(&scene, &mut timer);
-                timer.stop("trace_frame_additive");
+                let num_primary_rays = raytracer.trace_frame_additive(&scene);
 
-                timer.start("get_film");
                 let generated_frame = raytracer.film.get_pixels();
-                timer.stop("get_film");
 
-                timer.start("frame_to_u32");
                 let ldr_frame = generated_frame
                     .iter()
                     .map(|pix| tonemap::simple_map(pix))
                     .map(|pix| scene::color::RGBA::from_rgb(pix, 1.0).to_u32())
                     .collect();
-                timer.stop("frame_to_u32");
 
                 // lock & copy frame
-                timer.start("lock_&_copy");
                 {
                     let mut frame_w = frame.write().unwrap();
                     *frame_w = ldr_frame;
                 }
-                timer.stop("lock_&_copy");
 
                 // notify main thread
                 copy_frame_sender
@@ -233,13 +228,13 @@ fn main() -> Result<(), String> {
             }
 
             // Done, print stats
-            println!("{}", timer);
             println!("{}\n\n", stats.mean_stats());
         }
     });
 
     // main / gui loop
     while window.is_open() && !window.is_key_down(Key::Escape) {
+        
         // update window with frame if available
         if copy_frame_reciever.try_recv().is_ok() {
             // lock & update

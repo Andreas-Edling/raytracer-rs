@@ -15,7 +15,6 @@ pub trait SceneLoader {
         width: usize,
         height: usize,
     ) -> Result<Scene, SceneLoadError>;
-    //fn load() -> Result<Scene, SceneLoadError>;
 }
 
 #[derive(Debug)]

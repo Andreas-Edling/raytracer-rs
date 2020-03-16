@@ -10,7 +10,6 @@ use accel_intersect::*;
 use film::Film;
 use intersect::HitInfo;
 use sample_generator::SampleGenerator;
-use timing::BenchMark;
 
 pub struct Hit {
     hit_info: HitInfo,
@@ -71,7 +70,7 @@ where
         }
     }
 
-    pub fn trace_frame_additive(&mut self, scene: &Scene, _timer: &mut BenchMark) -> u32 {
+    pub fn trace_frame_additive(&mut self, scene: &Scene) -> u32 {
         const RECURSIONS: u8 = 2;
         const SUB_SPREAD: u32 = 1;
 

@@ -544,7 +544,6 @@ dependencies = [
  "minifb 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "parseval 0.1.0",
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
- "timing 0.1.0",
 ]
 
 [[package]]
