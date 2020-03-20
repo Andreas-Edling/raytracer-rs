@@ -1,5 +1,5 @@
 [package]
-name = "raytracer-rs"
+name = "raytracer_lib"
 version = "0.1.0"
 authors = ["aeg <andreas.edling@gmail.com>"]
 edition = "2018"
@@ -9,8 +9,5 @@ edition = "2018"
 [dependencies]
 
 rand = "0.7.2"
-minifb = "0.14.0"
-clap = "2.33.0"
 image = "0.23.0"
-waithandle = "*"
 parseval ={ path = "../parseval"}

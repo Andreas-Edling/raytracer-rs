@@ -1,8 +1,5 @@
-mod raytracer;
-mod scene;
-mod tonemap;
-mod vecmath;
-mod stats;
+
+use raytracer_lib::{RayTracer, stats::Stats};
 
 use std::{
     sync::mpsc::{channel, Receiver, Sender},
@@ -13,30 +10,10 @@ use std::{
 use clap::{App, Arg};
 use minifb::{Key, Window, WindowOptions};
 
-#[allow(unused_imports)]
-use scene::loaders::{colladaloader::ColladaLoader, SceneLoader};
-use raytracer::RayTracer;
-use stats::Stats;
-
 const DEFAULT_WIDTH: usize = 1024;
 const DEFAULT_HEIGHT: usize = 768;
 const DEFAULT_COLLADA_FILE: &str = "./data/thai2.dae";
 
-#[derive(Debug, Clone, Copy)]
-enum Event {
-    KeyDown(Key),
-}
-
-fn generate_events(window: &Window) -> Vec<Event> {
-    let mut events = Vec::new();
-    if let Some(keys) = window.get_keys() {
-        for key in keys {
-            events.push(Event::KeyDown(key));
-        }
-    }
-
-    events
-}
 
 struct CmdArgs {
     max_triangles: usize,
@@ -60,7 +37,7 @@ impl CmdArgs {
             .short("m")
             .long("max_triangles")
             .value_name("MAX_TRIS")
-            .help(&format!("sets maximum number of triangles per leaf in octtree. defaults to {} if omitted",raytracer::accel_intersect::oct_tree_intersector::DEFAULT_TRIANGLES_PER_LEAF))
+            .help(&format!("sets maximum number of triangles per leaf in octtree. defaults to {} if omitted",raytracer_lib::DEFAULT_TRIANGLES_PER_LEAF))
         )
         .arg(Arg::with_name("frame_iterations")
             .short("f")
@@ -84,9 +61,9 @@ impl CmdArgs {
 
         let max_triangles = match matches.value_of("max_triangles") {
             Some(max_triangles) => max_triangles.parse::<usize>().unwrap_or(
-                raytracer::accel_intersect::oct_tree_intersector::DEFAULT_TRIANGLES_PER_LEAF,
+                raytracer_lib::DEFAULT_TRIANGLES_PER_LEAF,
             ),
-            None => raytracer::accel_intersect::oct_tree_intersector::DEFAULT_TRIANGLES_PER_LEAF,
+            None => raytracer_lib::DEFAULT_TRIANGLES_PER_LEAF,
         };
         println!("max triangles per leaf: {}", max_triangles);
 
@@ -124,9 +101,25 @@ impl CmdArgs {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+enum Event {
+    KeyDown(Key),
+}
+
+fn generate_events(window: &Window) -> Vec<Event> {
+    let mut events = Vec::new();
+    if let Some(keys) = window.get_keys() {
+        for key in keys {
+            events.push(Event::KeyDown(key));
+        }
+    }
+
+    events
+}
+
 fn handle_events(
     raytracer: &mut RayTracer,
-    events_receiver: &std::sync::mpsc::Receiver<Vec<Event>>,
+    events_receiver: &Receiver<Vec<Event>>,
 ) {
     for events in events_receiver.try_iter() {
         for event in events {
@@ -179,25 +172,6 @@ fn handle_events(
     }
 }
 
-fn create_raytracer(collada_filename: String, triangles_per_leaf: usize, width: usize, height: usize) -> Result<RayTracer, String> {
-    let scene = ColladaLoader::from_file(collada_filename, width, height)
-        .map_err(|e| e.to_string())?;
-
-    let octtree = raytracer::accel_intersect::OctTreeIntersector::with_triangles_per_leaf(
-        &scene,
-        triangles_per_leaf,
-    );
-    
-    Ok(
-        RayTracer::new_with_intersector(
-            width,
-            height,
-            scene.cameras[0].clone(),
-            octtree,
-            scene,
-        )
-    )
-}
 
 fn main() -> Result<(), String> {
     let cmd_args = CmdArgs::get_cmd_args();
@@ -210,7 +184,7 @@ fn main() -> Result<(), String> {
     let (events_sender, events_receiver): (Sender<Vec<Event>>, Receiver<Vec<Event>>) = channel();
     let mut stats = Stats::new();
     let mut current_iteration = 0;
-    let mut raytracer = create_raytracer(
+    let mut raytracer = raytracer_lib::create_raytracer(
         cmd_args.collada_filename, 
         cmd_args.max_triangles, 
         width, 
@@ -224,40 +198,25 @@ fn main() -> Result<(), String> {
     let raytracer_thread = std::thread::spawn({
         let frame = Arc::clone(&frame);
         move || {
-            let mut running = true;
-            while running {
+            while !shutdown_listener.check().expect("shutdown_listener failed") {
+
+                // render
                 let num_primary_rays = raytracer.trace_frame_additive();
+                let ldr_frame = raytracer.get_tonemapped_pixels();
 
-                let generated_frame = raytracer.film.get_pixels();
-
-                let ldr_frame = generated_frame
-                    .iter()
-                    .map(|pix| tonemap::simple_map(pix))
-                    .map(|pix| scene::color::RGBA::from_rgb(pix, 1.0).to_u32())
-                    .collect();
-
-                // lock & copy frame
+                // lock & copy frame, notify, wait
                 {
                     let mut frame_w = frame.write().unwrap();
                     *frame_w = ldr_frame;
                 }
-
-                // notify main thread
                 frame_ready_signaler.signal().expect("frame_ready_signaler failed");
-
-                //wait for main thread
-                copied_frame_listener.wait(Duration::from_millis(100)).expect("copied_frame_listener failed");
+                copied_frame_listener.wait(Duration::from_millis(10000)).expect("copied_frame_listener failed");
 
                 handle_events(&mut raytracer, &events_receiver);
 
                 println!("{}", stats.stats(num_primary_rays));
-
-                if shutdown_listener.check().expect("shutdown_listener failed") {
-                    running = false;
-                }
             }
 
-            // Done, print mean stats
             println!("{}\n\n", stats.mean_stats());
         }
     });
@@ -265,7 +224,7 @@ fn main() -> Result<(), String> {
     // main / gui loop
     while window.is_open() && !window.is_key_down(Key::Escape) {
         
-        // update window with frame if available, 
+        // update screen with frame if it's available, 
         // or timeout and update window, mainting 60Hz-ish framerate, 
         // to keep the window responsive
         if frame_ready_listener.wait(Duration::from_millis(16)).expect("frame_ready_listener failed") {
@@ -301,7 +260,7 @@ fn main() -> Result<(), String> {
     shutdown_signaler.signal().expect("unable to send shutdown signal");
     raytracer_thread
         .join()
-        .expect("couldnt join raytracer thread");
+        .expect("couldn't join raytracer thread");
     Ok(())
 }
 

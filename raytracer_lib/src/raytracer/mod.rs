@@ -2,9 +2,10 @@ pub mod accel_intersect;
 mod film;
 mod intersect;
 mod sample_generator;
+mod tonemap;
 
-use crate::scene::{camera::Camera, color::Diffuse, color::RGB, Ray, Scene};
-use crate::vecmath::{cross, dot, Vec3};
+use super::scene::{camera::Camera, color::Diffuse, color::{RGB, RGBA}, Ray, Scene};
+use super::vecmath::{cross, dot, Vec3};
 
 use accel_intersect::*;
 use film::Film;
@@ -112,6 +113,18 @@ where
         }
         num_primary_rays
     }
+
+    
+    pub fn get_tonemapped_pixels(&self) -> Vec<u32> {
+        let hdr_frame = self.film.get_pixels();
+        let ldr_frame = hdr_frame
+            .iter()
+            .map(|pix| tonemap::simple_map(pix))
+            .map(|pix| RGBA::from_rgb(pix, 1.0).to_u32())
+            .collect();
+        ldr_frame
+    }
+
 }
 
 fn compute_radiance<Accel>(
