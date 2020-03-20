@@ -5,8 +5,9 @@ mod vecmath;
 mod stats;
 
 use std::{
-    sync::mpsc::channel,
+    sync::mpsc::{channel, Receiver, Sender},
     sync::{Arc, RwLock},
+    time::Duration,
 };
 
 use clap::{App, Arg};
@@ -206,13 +207,7 @@ fn main() -> Result<(), String> {
     let mut window = Window::new("raytracer-rs", width, height, WindowOptions::default())
         .map_err(|e| e.to_string())?;
     let frame = Arc::new(RwLock::new(vec![0u32; width*height]));
-    let (copy_frame_sender, copy_frame_reciever) = channel();
-    let (copied_frame_sender, copied_frame_reciever) = channel();
-    let (events_sender, events_receiver): (
-        std::sync::mpsc::Sender<Vec<Event>>,
-        std::sync::mpsc::Receiver<Vec<Event>>,
-    ) = std::sync::mpsc::channel();
-    let (shutdown_sender, shutdown_receiver) = std::sync::mpsc::channel();
+    let (events_sender, events_receiver): (Sender<Vec<Event>>, Receiver<Vec<Event>>) = channel();
     let mut stats = Stats::new();
     let mut current_iteration = 0;
     let mut raytracer = create_raytracer(
@@ -220,6 +215,10 @@ fn main() -> Result<(), String> {
         cmd_args.max_triangles, 
         width, 
         height)?;
+
+    let (frame_ready_signaler, frame_ready_listener) = waithandle::new();
+    let (copied_frame_signaler, copied_frame_listener) = waithandle::new();
+    let (shutdown_signaler, shutdown_listener) = waithandle::new();
 
     // raytracer loop
     let raytracer_thread = std::thread::spawn({
@@ -244,20 +243,16 @@ fn main() -> Result<(), String> {
                 }
 
                 // notify main thread
-                copy_frame_sender
-                    .send(())
-                    .expect("channel copy_frame_sender failed on send");
+                frame_ready_signaler.signal().expect("frame_ready_signaler failed");
 
                 //wait for main thread
-                copied_frame_reciever
-                    .recv()
-                    .expect("channel copied_frame_reciever failed on recv");
+                copied_frame_listener.wait(Duration::from_millis(100)).expect("copied_frame_listener failed");
 
                 handle_events(&mut raytracer, &events_receiver);
 
                 println!("{}", stats.stats(num_primary_rays));
 
-                if shutdown_receiver.try_recv().is_ok() {
+                if shutdown_listener.check().expect("shutdown_listener failed") {
                     running = false;
                 }
             }
@@ -270,8 +265,10 @@ fn main() -> Result<(), String> {
     // main / gui loop
     while window.is_open() && !window.is_key_down(Key::Escape) {
         
-        // update window with frame if available
-        if copy_frame_reciever.try_recv().is_ok() {
+        // update window with frame if available, 
+        // or timeout and update window, mainting 60Hz-ish framerate, 
+        // to keep the window responsive
+        if frame_ready_listener.wait(Duration::from_millis(16)).expect("frame_ready_listener failed") {
             // lock & update
             {
                 let frame_r = frame.read().unwrap();
@@ -279,9 +276,9 @@ fn main() -> Result<(), String> {
                     .update_with_buffer_size(&frame_r, width, height)
                     .unwrap();
             }
-            copied_frame_sender
-                .send(())
-                .expect("channel copied_frame_sender failed on send");
+
+            //notify raytracer
+            copied_frame_signaler.signal().expect("copied_frame_signaler failed");
 
             if let Some(frame_iterations) = cmd_args.frame_iterations {
                 current_iteration += 1;
@@ -298,17 +295,10 @@ fn main() -> Result<(), String> {
         events_sender
             .send(events)
             .expect("channel events_sender failed on send");
-
-        std::thread::sleep(std::time::Duration::from_millis(16));
     }
 
     // shutdown
-    copied_frame_sender
-        .send(())
-        .expect("channel copied_frame_sender failed on send"); //we need to send this to unblock raytracer thread
-    shutdown_sender
-        .send(())
-        .expect("unable to send shutdown signal");
+    shutdown_signaler.signal().expect("unable to send shutdown signal");
     raytracer_thread
         .join()
         .expect("couldnt join raytracer thread");
