@@ -1,4 +1,5 @@
 
+
 use raytracer_lib::{RayTracer, stats::Stats};
 
 use std::{
@@ -22,6 +23,7 @@ struct CmdArgs {
     width: usize,
     height: usize,
 }
+
 impl CmdArgs {
     pub fn get_cmd_args() -> CmdArgs {
         let matches = App::new("raytracer-rs")
@@ -113,7 +115,6 @@ fn generate_events(window: &Window) -> Vec<Event> {
             events.push(Event::KeyDown(key));
         }
     }
-
     events
 }
 
