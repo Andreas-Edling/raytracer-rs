@@ -233,7 +233,7 @@ fn main() -> Result<(), String> {
             {
                 let frame_r = frame.read().unwrap();
                 window
-                    .update_with_buffer_size(&frame_r, width, height)
+                    .update_with_buffer(&frame_r, width, height)
                     .unwrap();
             }
 
