@@ -9,6 +9,10 @@ Supports native and WASM/web targets.
 > cargo run --release
 ```
 
+specify input data, eg: 
+```shell
+cargo run --release -- -f ./data/4boxes.dae
+```
 
 ## Build for WASM 
 
