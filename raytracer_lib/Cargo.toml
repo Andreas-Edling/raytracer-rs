@@ -10,4 +10,4 @@ edition = "2018"
 
 rand = {version = "0.7.3", features=["small_rng", "wasm-bindgen"] }
 image = "0.23.0"
-parseval ={ path = "../../../parseval"}
+parseval = { git = "https://github.com/Andreas-Edling/parseval.git" }
