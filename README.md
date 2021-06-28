@@ -11,7 +11,7 @@ Supports native and WASM/web targets.
 
 specify input data, eg: 
 ```shell
-cargo run --release -- -f ./data/4boxes.dae
+cargo run --release -- -f ./data/ico2.dae
 ```
 
 ## Build for WASM 
