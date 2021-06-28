@@ -2,21 +2,20 @@ name: Continuous Integration
 on: [push, pull_request]
 
 jobs:
-  release:
+  build:
     name: Build
     strategy:
       matrix:
-        kind: ['linux', 'windows']
+        kind: ['windows', 'wasm']
         include:
-          - kind: linux
-            os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
           - kind: windows
             os: windows-latest
             target: x86_64-pc-windows-msvc
+            args: 
           - kind: wasm
-            os: ubuntu-latest
+            os: windows-latest
             target: wasm32-unknown-unknown
+            args: --lib
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -37,6 +36,36 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --target ${{ matrix.target }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          args: --release ${{ matrix.args }} --target ${{ matrix.target }}
+
+  publish:
+    runs-on: windows-latest
+    needs: [build]
+    steps:
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          target: wasm32-unknown-unknown
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Fetch crates
+        uses: actions-rs/cargo@v1
+        with:
+          command: fetch
+          args: --target wasm32-unknown-unknown
+      - name: Release build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --lib --target wasm32-unknown-unknown
+      - name: bindgen
+        run: cargo install wasm-bindgen-cli 
+      - name: bindgen
+        run: wasm-bindgen --target web --no-typescript --out-dir ./www target/wasm32-unknown-unknown/release/raytracer_wasm.wasm
+      # - name: Deploy 🚀
+      #   uses: JamesIves/github-pages-deploy-action@4.1.4
+      #   with:
+      #     branch: gh-pages # The branch the action should deploy to.
+      #     folder: build # The folder the action should deploy.

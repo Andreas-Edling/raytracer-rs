@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 
-rand = {version = "0.7.3", features=["small_rng", "wasm-bindgen"] }
+getrandom = { version = "0.2", features = ["js"] }
+rand = {version = "0.8.4", features=["small_rng"] }
 image = "0.23.0"
 parseval = { git = "https://github.com/Andreas-Edling/parseval.git" }

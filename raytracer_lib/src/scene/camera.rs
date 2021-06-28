@@ -81,9 +81,9 @@ impl Camera {
 
     pub fn get_ray(&self, u: usize, v: usize, mut rng: impl Rng) -> Ray {
         let dir_x = -self.max_x
-            + 2.0 * self.max_x * ((u as f32 + rng.gen_range(0.0, 1.0)) / self.width as f32);
+            + 2.0 * self.max_x * ((u as f32 + rng.gen_range(0.0..1.0)) / self.width as f32);
         let dir_y = -self.max_y
-            + 2.0 * self.max_y * ((v as f32 + rng.gen_range(0.0, 1.0)) / self.height as f32);
+            + 2.0 * self.max_y * ((v as f32 + rng.gen_range(0.0..1.0)) / self.height as f32);
         let dir = Vec4::new(dir_x, -dir_y, 1.0, 1.0);
         let dir = self.rotation_matrix * dir;
 
