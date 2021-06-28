@@ -1,5 +1,4 @@
 
-
 use raytracer_lib::{RayTracer, stats::Stats};
 
 use std::{
@@ -14,6 +13,7 @@ use minifb::{Key, Window, WindowOptions};
 const DEFAULT_WIDTH: usize = 1024;
 const DEFAULT_HEIGHT: usize = 768;
 const DEFAULT_COLLADA_FILE: &str = "./data/thai2.dae";
+//const DEFAULT_COLLADA_FILE: &str = "./data/4boxes.dae";
 
 
 struct CmdArgs {
@@ -185,7 +185,7 @@ fn main() -> Result<(), String> {
     let (events_sender, events_receiver): (Sender<Vec<Event>>, Receiver<Vec<Event>>) = channel();
     let mut stats = Stats::new();
     let mut current_iteration = 0;
-    let mut raytracer = raytracer_lib::create_raytracer(
+    let mut raytracer = raytracer_lib::create_raytracer_from_file(
         cmd_args.collada_filename, 
         cmd_args.max_triangles, 
         width, 

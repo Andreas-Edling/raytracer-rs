@@ -1,4 +1,3 @@
-use rand::rngs::ThreadRng;
 use rand::Rng;
 
 use crate::vecmath::{Matrix, Ray, Vec3, Vec4};
@@ -80,7 +79,7 @@ impl Camera {
         self.update_matrices();
     }
 
-    pub fn get_ray(&self, u: usize, v: usize, rng: &mut ThreadRng) -> Ray {
+    pub fn get_ray(&self, u: usize, v: usize, mut rng: impl Rng) -> Ray {
         let dir_x = -self.max_x
             + 2.0 * self.max_x * ((u as f32 + rng.gen_range(0.0, 1.0)) / self.width as f32);
         let dir_y = -self.max_y

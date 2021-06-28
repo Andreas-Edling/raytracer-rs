@@ -2,6 +2,6 @@
 members = [
     "raytracer_lib",
     "raytracer",
-    "parseval",
+    "raytracer_wasm",
     "timing"
 ]

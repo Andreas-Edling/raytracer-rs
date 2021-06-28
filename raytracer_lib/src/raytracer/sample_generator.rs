@@ -28,7 +28,7 @@ impl SampleGenerator {
         self.normalized_vecs[self.sample_idx as usize]
     }
 
-    pub fn normalized_vec_pseudo(&mut self, rng: &mut rand::rngs::ThreadRng) -> Vec3 {
+    pub fn normalized_vec_pseudo(&mut self, mut rng: impl Rng) -> Vec3 {
         self.sample_idx = rng.gen_range(0, NUM_SAMPLES - 1) as u16;
         self.normalized_vecs[self.sample_idx as usize]
     }

@@ -4,6 +4,8 @@ mod intersect;
 mod sample_generator;
 mod tonemap;
 
+use rand::{SeedableRng, rngs::StdRng};
+
 use super::scene::{camera::Camera, color::Diffuse, color::{RGB, RGBA}, Ray, Scene};
 use super::vecmath::{cross, dot, Vec3};
 
@@ -79,7 +81,7 @@ where
         const RECURSIONS: u8 = 2;
         const SUB_SPREAD: u32 = 1;
 
-        let mut rng = rand::thread_rng();
+        let mut rng = StdRng::from_entropy();
 
         let mut num_primary_rays = 0;
         for _ in 0..50 {
@@ -114,7 +116,7 @@ where
         num_primary_rays
     }
 
-    
+
     pub fn get_tonemapped_pixels(&self) -> Vec<u32> {
         let hdr_frame = self.film.get_pixels();
         let ldr_frame = hdr_frame
@@ -147,7 +149,7 @@ where
 
     let num_sub_rays = spread * recursions as u32;
 
-    let mut rng = rand::thread_rng(); // TODO move this to new
+    let mut rng = StdRng::from_entropy(); // TODO move this to new
 
     let sub_radiance = (0..num_sub_rays)
         .map(|_| {
@@ -178,7 +180,7 @@ fn randomize_reflection_ray(
     hit: &Hit,
     ray: &Ray,
     normal: &Vec3,
-    rng: &mut rand::rngs::ThreadRng,
+    rng: impl rand::Rng,
 ) -> Ray {
     // get random direction on hemisphere
     let mut random_dir = sample_generator.normalized_vec_pseudo(rng);
