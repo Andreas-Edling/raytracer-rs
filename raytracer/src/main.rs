@@ -42,7 +42,7 @@ impl CmdArgs {
             .help(&format!("sets maximum number of triangles per leaf in octtree. defaults to {} if omitted",raytracer_lib::DEFAULT_TRIANGLES_PER_LEAF))
         )
         .arg(Arg::with_name("frame_iterations")
-            .short("f")
+            .short("i")
             .long("frame_iterations")
             .value_name("FRAME_ITERATIONS")
             .help("sets a bound on how many frame iterations should be calculated.")
