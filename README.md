@@ -14,7 +14,7 @@ specify input data, eg:
 cargo run --release -- -f ./data/ico2.dae
 ```
 
-## Build for WASM 
+## Build/Run with WASM 
 
 ```shell
 > ./build_wasm.ps1
