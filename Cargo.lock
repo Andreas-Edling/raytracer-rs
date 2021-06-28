@@ -461,6 +461,7 @@ dependencies = [
 [[package]]
 name = "parseval"
 version = "0.1.0"
+source = "git+https://github.com/Andreas-Edling/parseval.git#c5746eb04f76893be670497692cb349476e516b8"
 
 [[package]]
 name = "pkg-config"
