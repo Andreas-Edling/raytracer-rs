@@ -1,3 +1,5 @@
+![ci](https://github.com/Andreas-Edling/raytracer-rs/actions/workflows/ci.yaml/badge.svg)
+
 # raytracer-rs
 
 A raytracer written in Rust, for fun. It uses collada files as input.  
