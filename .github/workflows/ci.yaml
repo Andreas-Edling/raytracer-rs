@@ -48,24 +48,30 @@ jobs:
           toolchain: stable
           override: true
           target: wasm32-unknown-unknown
+      
       - name: Checkout
         uses: actions/checkout@v1
+      
       - name: Fetch crates
         uses: actions-rs/cargo@v1
         with:
           command: fetch
           args: --target wasm32-unknown-unknown
+      
       - name: Release build
         uses: actions-rs/cargo@v1
         with:
           command: build
           args: --release --lib --target wasm32-unknown-unknown
+      
       - name: Install bindgen
         run: cargo install wasm-bindgen-cli 
+      
       - name: Run bindgen
         run: wasm-bindgen --target web --no-typescript --out-dir ./www target/wasm32-unknown-unknown/release/raytracer_wasm.wasm
-      # - name: Deploy 🚀
-      #   uses: JamesIves/github-pages-deploy-action@4.1.4
-      #   with:
-      #     branch: gh-pages # The branch the action should deploy to.
-      #     folder: build # The folder the action should deploy.
+      
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@4.1.4
+        with:
+          branch: gh-pages # The branch the action should deploy to.
+          folder: www # The folder the action should deploy.
