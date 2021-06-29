@@ -1,0 +1,32 @@
+<html>
+
+<head>
+  <title>Raytracer</title>
+  <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+</head>
+
+<body>
+  <!-- LOAD WASM -->
+  <script type="module">
+    import { create_raytracer, draw_traced, default as init } from './raytracer_wasm.js';
+    async function run() {
+      await init('./raytracer_wasm_bg.wasm');
+      let raytracer = create_raytracer();
+
+      window.draw_part = function () {
+        draw_traced(raytracer);
+        window.requestAnimationFrame(draw_part);
+      };
+      window.requestAnimationFrame(draw_part);
+    }
+    run();
+  </script>
+
+  <!-- HEADER -->
+  <h1>Rust WASM Raytracer</h1>
+
+  <canvas id="canvas" width="1024" height="768" style="border:1px solid #000000;"> </canvas>
+
+</body>
+
+</html>
