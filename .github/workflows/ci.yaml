@@ -60,9 +60,9 @@ jobs:
         with:
           command: build
           args: --release --lib --target wasm32-unknown-unknown
-      - name: bindgen
+      - name: Install bindgen
         run: cargo install wasm-bindgen-cli 
-      - name: bindgen
+      - name: Run bindgen
         run: wasm-bindgen --target web --no-typescript --out-dir ./www target/wasm32-unknown-unknown/release/raytracer_wasm.wasm
       # - name: Deploy 🚀
       #   uses: JamesIves/github-pages-deploy-action@4.1.4
