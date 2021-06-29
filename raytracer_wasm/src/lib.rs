@@ -16,7 +16,7 @@ pub struct RaytracerProxy {
 pub fn create_raytracer() -> RaytracerProxy {
     RaytracerProxy{
         raytracer: raytracer_lib::create_raytracer(
-            inline_data::BOXES_DOC,
+            inline_data::ICO2_DOC,
             70,
             1024,
             768
