@@ -8,7 +8,7 @@ Supports native and WASM/web targets.
 ## Build/Run Native
 
 ```shell
-> cargo run --release
+cargo run --release
 ```
 
 specify input data, eg: 
@@ -19,6 +19,6 @@ cargo run --release -- -f ./data/ico2.dae
 ## Build/Run with WASM 
 
 ```shell
-> ./build_wasm.ps1
-> ./run_wasm.ps1
+./build_wasm.ps1
+./run_wasm.ps1
 ```
