@@ -39,7 +39,7 @@ jobs:
           args: --release ${{ matrix.args }} --target ${{ matrix.target }}
 
   publish:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     needs: [build]
     steps:
       - name: Install stable toolchain
