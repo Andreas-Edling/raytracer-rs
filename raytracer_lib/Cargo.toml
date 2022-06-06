@@ -10,5 +10,5 @@ edition = "2018"
 
 getrandom = { version = "0.2", features = ["js"] }
 rand = {version = "0.8.4", features=["small_rng"] }
-image = "0.23.0"
+image = "0.23.12"
 parseval = { git = "https://github.com/Andreas-Edling/parseval.git" }
