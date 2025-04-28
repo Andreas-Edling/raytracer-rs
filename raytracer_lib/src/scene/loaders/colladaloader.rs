@@ -244,7 +244,7 @@ impl Collada {
 
                                     Material {
                                         diffuse,
-                                        emissive: RGB::pink(),
+                                        emissive: collada_effect.emission.into(),
                                         specular: collada_effect.specular,
                                         index_of_refraction: collada_effect.index_of_refraction,
                                     }
