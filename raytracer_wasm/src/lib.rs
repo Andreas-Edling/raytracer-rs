@@ -54,17 +54,6 @@ pub fn draw_traced(raytracer_proxy: &mut RaytracerProxy) {
     context.put_image_data(&data, 0.0, 0.0).unwrap();
 }
 
-// #[wasm_bindgen]
-// pub fn trace_frame_additive(raytracer_proxy: &mut RaytracerProxy) -> u32 {
-//     raytracer_proxy.raytracer.trace_frame_additive()
-// }
-
-// #[wasm_bindgen]
-// pub fn get_tonemapped_pixels(raytracer_proxy: &RaytracerProxy) -> Vec<u32> {
-//     raytracer_proxy.raytracer.get_tonemapped_pixels()
-// }
-
-
 #[cfg(test)]
 mod tests {
     #[test]

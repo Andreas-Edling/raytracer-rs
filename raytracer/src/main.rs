@@ -13,8 +13,6 @@ use minifb::{Key, Window, WindowOptions};
 const DEFAULT_WIDTH: usize = 1024;
 const DEFAULT_HEIGHT: usize = 768;
 const DEFAULT_COLLADA_FILE: &str = "./data/thai2.dae";
-//const DEFAULT_COLLADA_FILE: &str = "./data/4boxes.dae";
-
 
 struct CmdArgs {
     max_triangles: usize,

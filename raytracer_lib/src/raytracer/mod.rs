@@ -229,22 +229,6 @@ where
             }
         }
 
-        // for geom in &scene.geometries {
-        //     for tri_vertices in geom.vertices.chunks(3) {
-        //         if let Some(t) = intersect::intersect_later_out(
-        //             &ray_to_light,
-        //             &tri_vertices[0],
-        //             &tri_vertices[1],
-        //             &tri_vertices[2],
-        //         ) {
-        //             if t > 0.0001 && t < 1.0 {
-        //                 blocked = true;
-        //                 break;
-        //             }
-        //         }
-        //     }
-        // }
-
         if !blocked {
             //lambertian / diffuse
             // accum_color += dot_light_normal
