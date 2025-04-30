@@ -29,19 +29,19 @@ impl SampleGenerator {
     }
 
     pub fn normalized_vec_pseudo(&mut self, mut rng: impl Rng) -> Vec3 {
-        self.sample_idx = rng.gen_range(0..NUM_SAMPLES - 1) as u16;
+        self.sample_idx = rng.random_range(0..NUM_SAMPLES - 1) as u16;
         self.normalized_vecs[self.sample_idx as usize]
     }
 
     fn generate_normalized_vec3() -> Vec3 {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         // randomize in box, until inside unit sphere, then normalize
         let dir = loop {
             let dir = Vec3::new(
-                rng.gen_range(-1.0..1.0),
-                rng.gen_range(-1.0..1.0),
-                rng.gen_range(-1.0..1.0),
+                rng.random_range(-1.0..1.0),
+                rng.random_range(-1.0..1.0),
+                rng.random_range(-1.0..1.0),
             );
             if dot(&dir, &dir) < 1.0 {
                 break dir;

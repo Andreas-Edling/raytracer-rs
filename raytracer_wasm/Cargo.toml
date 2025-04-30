@@ -8,12 +8,12 @@ edition = "2018"
 
 [dependencies]
 wasm-bindgen = "0.2.100"
-failure = "0.1.6"
+failure = "0.1.8"
 raytracer_lib = { path = "../raytracer_lib"}
 
 
 [dependencies.web-sys]
-version = "0.3.37"
+version = "0.3.77"
 features = [
   'CanvasRenderingContext2d',
   'Document',
