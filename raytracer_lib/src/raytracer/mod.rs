@@ -81,7 +81,7 @@ where
         const RECURSIONS: u8 = 2;
         const SUB_SPREAD: u32 = 1;
 
-        let mut rng = StdRng::from_entropy();
+        let mut rng = StdRng::from_os_rng();
 
         let mut num_primary_rays = 0;
         for _ in 0..50 {
@@ -149,7 +149,7 @@ where
 
     let num_sub_rays = spread * recursions as u32;
 
-    let mut rng = StdRng::from_entropy(); // TODO move this to new
+    let mut rng = StdRng::from_os_rng(); // TODO move this to new
 
     let sub_radiance = (0..num_sub_rays)
         .map(|_| {

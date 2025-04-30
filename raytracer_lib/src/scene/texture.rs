@@ -33,7 +33,7 @@ pub trait TextureLoader {
 
 impl TextureLoader for Texture {
     fn from_file<P: AsRef<std::path::Path>>(path: P) -> Result<Texture, TextureLoadError> {
-        let image = image::open(path)?.to_rgb();
+        let image = image::open(path)?.to_rgb8();
         let (w, h) = image.dimensions();
         let data = image
             .pixels()

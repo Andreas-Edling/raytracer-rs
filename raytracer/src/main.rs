@@ -7,7 +7,7 @@ use std::{
     time::Duration,
 };
 
-use clap::{App, Arg};
+use clap::{Arg, Command};
 use minifb::{Key, Window, WindowOptions};
 
 const DEFAULT_WIDTH: usize = 1024;
@@ -24,42 +24,40 @@ struct CmdArgs {
 
 impl CmdArgs {
     pub fn get_cmd_args() -> CmdArgs {
-        let matches = App::new("raytracer-rs")
+        let matches = Command::new("raytracer-rs")
         .version("0.1.0")
         .author("Andreas Edling")
-        .arg(Arg::with_name("collada_file")
-            .short("f")
+        .arg(Arg::new("collada_file")
+            .short('f')
             .long("file")
             .value_name("COLLADA_FILENAME")
             .help("what collada (.dae) file to load for rendering")
         )
-        .arg(Arg::with_name("max_triangles")
-            .short("m")
+        .arg(Arg::new("max_triangles")
+            .short('m')
             .long("max_triangles")
             .value_name("MAX_TRIS")
             .help(&format!("sets maximum number of triangles per leaf in octtree. defaults to {} if omitted",raytracer_lib::DEFAULT_TRIANGLES_PER_LEAF))
         )
-        .arg(Arg::with_name("frame_iterations")
-            .short("i")
+        .arg(Arg::new("frame_iterations")
+            .short('i')
             .long("frame_iterations")
             .value_name("FRAME_ITERATIONS")
             .help("sets a bound on how many frame iterations should be calculated.")
         )
-        .arg(Arg::with_name("width")
-            .short("w")
+        .arg(Arg::new("width")
             .long("width")
             .value_name("WIDTH")
             .help("sets width of output")
         )
-        .arg(Arg::with_name("height")
-            .short("h")
+        .arg(Arg::new("height")
             .long("height")
             .value_name("HEIGHT")
             .help("sets height of output")
         )
         .get_matches();
 
-        let max_triangles = match matches.value_of("max_triangles") {
+        let max_triangles = match matches.get_one::<String>("max_triangles") {
             Some(max_triangles) => max_triangles.parse::<usize>().unwrap_or(
                 raytracer_lib::DEFAULT_TRIANGLES_PER_LEAF,
             ),
@@ -67,7 +65,7 @@ impl CmdArgs {
         };
         println!("max triangles per leaf: {}", max_triangles);
 
-        let frame_iterations = match matches.value_of("frame_iterations") {
+        let frame_iterations = match matches.get_one::<String>("frame_iterations") {
             Some(frame_iterations) => frame_iterations.parse::<usize>().ok(),
             None => None,
         };
@@ -75,17 +73,17 @@ impl CmdArgs {
             println!("will quit after {} frame iterations", frame_iterations);
         }
 
-        let width = match matches.value_of("width") {
+        let width = match matches.get_one::<String>("width") {
             Some(width) => width.parse::<usize>().unwrap_or(DEFAULT_WIDTH),
             None => DEFAULT_WIDTH,
         };
 
-        let height = match matches.value_of("height") {
+        let height = match matches.get_one::<String>("height") {
             Some(height) => height.parse::<usize>().unwrap_or(DEFAULT_HEIGHT),
             None => DEFAULT_HEIGHT,
         };
 
-        let collada_filename = match matches.value_of("collada_file") {
+        let collada_filename = match matches.get_one::<String>("collada_file") {
             Some(collada_file) => collada_file,
             None => DEFAULT_COLLADA_FILE,
         }
@@ -108,11 +106,10 @@ enum Event {
 
 fn generate_events(window: &Window) -> Vec<Event> {
     let mut events = Vec::new();
-    if let Some(keys) = window.get_keys() {
-        for key in keys {
-            events.push(Event::KeyDown(key));
-        }
+    for key in window.get_keys() {
+        events.push(Event::KeyDown(key));
     }
+
     events
 }
 
